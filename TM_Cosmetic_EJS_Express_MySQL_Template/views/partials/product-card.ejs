@@ -1,0 +1,13 @@
+<article class="product-card">
+  <a class="product-image" href="/products/<%= product.id %>">
+    <img src="<%= product.image_url %>" alt="<%= product.name %>" loading="lazy">
+    <% if (product.mrp && Number(product.mrp) > Number(product.price)) { %><span class="tag">SPECIAL PRICE</span><% } %>
+  </a>
+  <div class="product-info">
+    <small><%= product.category_name || product.category || 'BEAUTY' %></small>
+    <h3><a href="/products/<%= product.id %>"><%= product.name %></a></h3>
+    <div><b>₹<%= Number(product.price).toLocaleString('en-IN') %></b>
+      <% if (product.mrp) { %><del>₹<%= Number(product.mrp).toLocaleString('en-IN') %></del><% } %>
+    </div>
+  </div>
+</article>

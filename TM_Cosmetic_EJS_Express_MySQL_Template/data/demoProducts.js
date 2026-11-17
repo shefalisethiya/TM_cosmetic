@@ -1,0 +1,10 @@
+module.exports = [
+  { id: 1, name: 'Radiance Vitamin C Serum', category_name: 'Skin Care', price: 699, mrp: 899, image_url: 'https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?auto=format&fit=crop&w=800&q=85', description: 'A lightweight everyday serum for a fresh-looking glow.' },
+  { id: 2, name: 'Velvet Matte Lip Colour', category_name: 'Makeup', price: 499, mrp: 599, image_url: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&w=800&q=85', description: 'A comfortable matte lip colour for everyday looks.' },
+  { id: 3, name: 'Hydra Glow Moisturizer', category_name: 'Skin Care', price: 549, mrp: 699, image_url: 'https://images.unsplash.com/photo-1556229010-6c3f2c9ca5f8?auto=format&fit=crop&w=800&q=85', description: 'A daily moisturizer for soft, hydrated-feeling skin.' },
+  { id: 4, name: 'Nourish & Shine Hair Oil', category_name: 'Hair Care', price: 399, mrp: 499, image_url: 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=800&q=85', description: 'A nourishing hair-care essential.' },
+  { id: 5, name: 'Petal Soft Body Lotion', category_name: 'Bath & Body', price: 449, mrp: 549, image_url: 'https://images.unsplash.com/photo-1601049541289-9b1b7bbbfe19?auto=format&fit=crop&w=800&q=85', description: 'A gentle body-care pick for your daily routine.' },
+  { id: 6, name: 'Bloom Eau de Parfum', category_name: 'Fragrance', price: 1299, mrp: 1599, image_url: 'https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&w=800&q=85', description: 'A graceful fragrance for everyday moments.' },
+  { id: 7, name: 'Everyday Nude Eye Palette', category_name: 'Makeup', price: 799, mrp: 999, image_url: 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&w=800&q=85', description: 'Versatile neutral shades for day-to-evening looks.' },
+  { id: 8, name: 'Gentle Daily Face Cleanser', category_name: 'Skin Care', price: 349, mrp: 429, image_url: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=800&q=85', description: 'A simple cleansing step for your daily routine.' }
+];

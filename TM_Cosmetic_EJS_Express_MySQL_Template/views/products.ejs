@@ -1,0 +1,8 @@
+<%- include('partials/header', { title }) %>
+<section class="page-banner"><div class="eyebrow">THE TM COSMETIC COLLECTION</div><h1>Find your <em>everyday glow.</em></h1><p>Beauty and care essentials picked for you.</p></section>
+<section class="section products-page">
+  <div class="section-heading"><div><div class="eyebrow">SHOP OUR COLLECTION</div><h2>All <em>beauty essentials.</em></h2></div><span class="result-count"><%= products.length %> products</span></div>
+  <div class="product-grid"><% products.forEach(product => { %><%- include('partials/product-card', { product }) %><% }) %></div>
+  <% if (!products.length) { %><p class="empty-state">No products found in this category.</p><% } %>
+</section>
+<%- include('partials/footer') %>

@@ -1,0 +1,21 @@
+{
+  "name": "tm-cosmetic-ejs-store",
+  "version": "1.0.0",
+  "description": "Responsive TM Cosmetic storefront using EJS, Express and MySQL",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "mysql2": "^3.12.0",
+    "bcryptjs": "^2.4.3",
+    "express-session": "^1.18.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}

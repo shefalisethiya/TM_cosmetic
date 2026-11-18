@@ -1,38 +1,98 @@
-const db = require('../config/db');
-const demoProducts = require('../data/demoProducts');
 
+const db = require('../config/db');
+
+// Get active products from MySQL
 async function getProducts() {
-  try {
-    const [rows] = await db.query(
-      `SELECT p.id, p.name, p.description, p.price, p.mrp, p.image_url,
-              c.name AS category_name
-       FROM products p LEFT JOIN categories c ON c.id = p.category_id
-       WHERE p.is_active = 1 ORDER BY p.id DESC`
-    );
-    return rows.length ? rows : demoProducts;
-  } catch (error) {
-    console.warn('MySQL unavailable; showing demo products:', error.code || error.message);
-    return demoProducts;
-  }
+  const [rows] = await db.query(`
+    SELECT
+      p.id,
+      p.name,
+      p.description,
+      p.price,
+      p.mrp,
+      p.image_url,
+      p.stock,
+      p.is_active,
+      c.name AS category_name
+    FROM products p
+    LEFT JOIN categories c ON c.id = p.category_id
+    WHERE p.is_active = 1
+    ORDER BY p.id DESC
+  `);
+
+  return rows;
 }
 
+// HOME PAGE
 exports.home = async (req, res) => {
-  const items = await getProducts();
-  res.render('home', { title: 'TM Cosmetic | Beauty, Naturally', products: items.slice(0, 8) });
+  try {
+    const items = await getProducts();
+
+    res.render('home', {
+      title: 'TM Cosmetic | Beauty, Naturally',
+      products: items.slice(0, 8)
+    });
+  } catch (error) {
+    console.error('Home page error:', error);
+    res.status(500).send('Unable to load products.');
+  }
 };
 
+// ALL PRODUCTS
 exports.products = async (req, res) => {
-  const items = await getProducts();
-  const category = req.query.category || '';
-  const filtered = category
-    ? items.filter(p => (p.category_name || p.category || '').toLowerCase() === category.toLowerCase())
-    : items;
-  res.render('products', { title: 'Shop Beauty | TM Cosmetic', products: filtered, selectedCategory: category });
+  try {
+    const items = await getProducts();
+    const category = req.query.category || '';
+
+    const filtered = category
+      ? items.filter(p =>
+          (p.category_name || '').toLowerCase() === category.toLowerCase()
+        )
+      : items;
+
+    res.render('products', {
+      title: 'Shop Beauty | TM Cosmetic',
+      products: filtered,
+      selectedCategory: category
+    });
+  } catch (error) {
+    console.error('Products page error:', error);
+    res.status(500).send('Unable to load products.');
+  }
 };
 
+// PRODUCT DETAILS
 exports.productDetails = async (req, res) => {
-  const items = await getProducts();
-  const product = items.find(p => String(p.id) === String(req.params.id));
-  if (!product) return res.status(404).render('404', { title: 'Product not found' });
-  res.render('product-details', { title: `${product.name} | TM Cosmetic`, product });
+  try {
+    const [rows] = await db.query(
+      `SELECT
+         p.id,
+         p.name,
+         p.description,
+         p.price,
+         p.mrp,
+         p.image_url,
+         p.stock,
+         c.name AS category_name
+       FROM products p
+       LEFT JOIN categories c ON c.id = p.category_id
+       WHERE p.id = ? AND p.is_active = 1
+       LIMIT 1`,
+      [req.params.id]
+    );
+
+    if (!rows.length) {
+      return res.status(404).render('404', {
+        title: 'Product not found'
+      });
+    }
+
+    res.render('product-details', {
+      title: `${rows[0].name} | TM Cosmetic`,
+      product: rows[0]
+    });
+  } catch (error) {
+    console.error('Product details error:', error);
+    res.status(500).send('Unable to load product.');
+  }
 };

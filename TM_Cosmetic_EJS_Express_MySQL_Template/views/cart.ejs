@@ -1,0 +1,76 @@
+<%- include('partials/header', { title }) %>
+
+<section class="section">
+  <div class="section-heading">
+    <div>
+      <div class="eyebrow">YOUR SHOPPING BAG</div>
+      <h2>Your <em>cart.</em></h2>
+    </div>
+    <span class="result-count"><%= items.length %> items</span>
+  </div>
+
+  <% if (!items.length) { %>
+
+    <div class="empty-state">
+      <h3>Your cart is empty</h3>
+      <p>Discover your favourite beauty essentials.</p>
+      <a href="/products" class="button">Continue Shopping →</a>
+    </div>
+
+  <% } else { %>
+
+    <!-- NEW: wrapper that puts items and summary side by side -->
+    <div class="cart-layout">
+
+      <!-- LEFT: items -->
+      <div class="cart-items">
+        <% items.forEach(item => { %>
+          <article class="product-card cart-item">
+
+            <a class="product-image" href="/products/<%= item.product_id %>">
+              <img src="<%= item.image_url %>" alt="<%= item.name %>">
+            </a>
+
+            <div class="product-info">
+              <small>YOUR BEAUTY SELECTION</small>
+              <h3><%= item.name %></h3>
+              <p>Price: ₹<%= Number(item.price).toLocaleString('en-IN') %></p>
+              <p>Subtotal: ₹<%= Number(item.line_total).toLocaleString('en-IN') %></p>
+
+              <form action="/cart/update/<%= item.cart_id %>" method="POST" class="qty-form">
+                <label>Quantity</label>
+                <input type="number" name="quantity" value="<%= item.quantity %>"
+                       min="1" max="<%= item.stock %>" required>
+                <button type="submit" class="button">Update Cart</button>
+              </form>
+
+              <form action="/cart/remove/<%= item.cart_id %>" method="POST">
+                <button type="submit" class="text-link">Remove Item</button>
+              </form>
+            </div>
+
+          </article>
+        <% }) %>
+      </div>
+
+      <!-- RIGHT: order summary -->
+      <aside class="cart-summary">
+        <h3>Order Summary</h3>
+
+        <p class="summary-row">
+          <span>Subtotal</span>
+          <strong>₹<%= Number(subtotal).toLocaleString('en-IN') %></strong>
+        </p>
+
+        <p class="summary-note">Delivery charges calculated at checkout.</p>
+
+        <a href="/checkout" class="button summary-checkout">Proceed to Checkout →</a>
+        <a href="/products" class="text-link">← Continue Shopping</a>
+      </aside>
+
+    </div>
+
+  <% } %>
+</section>
+
+<%- include('partials/footer') %>

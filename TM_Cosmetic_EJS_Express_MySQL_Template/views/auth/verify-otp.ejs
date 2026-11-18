@@ -1,0 +1,45 @@
+<%- include('../partials/header', { title }) %>
+
+<section class="auth-page">
+  <div class="auth-card">
+    <span class="auth-eyebrow">SECURE LOGIN</span>
+
+    <h1>Verify <em>OTP</em></h1>
+
+    <p class="auth-intro">
+      Enter the 4-digit OTP generated for your login.
+    </p>
+
+    <% if (error) { %>
+      <div class="auth-alert"><%= error %></div>
+    <% } %>
+
+    <form class="auth-form" action="/verify-otp" method="POST">
+      <label for="otp">Enter OTP</label>
+
+      <input
+        id="otp"
+        name="otp"
+        type="text"
+        inputmode="numeric"
+        maxlength="4"
+        pattern="[0-9]{4}"
+        autocomplete="one-time-code"
+        placeholder="Enter 4-digit OTP"
+        required
+      >
+
+      <button class="button auth-submit" type="submit">
+        VERIFY OTP <span>→</span>
+      </button>
+    </form>
+
+    <form action="/resend-otp" method="POST">
+      <button type="submit" class="button">
+        Resend OTP
+      </button>
+    </form>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

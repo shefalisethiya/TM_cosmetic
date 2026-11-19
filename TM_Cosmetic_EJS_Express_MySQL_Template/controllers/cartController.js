@@ -1,30 +1,63 @@
 
 const db = require('../config/db');
 
+const PLACEHOLDER_IMG = '/images/placeholder.jpg';
+
+// Fields used to display cart products
+const ITEM_FIELDS = `
+  ci.product_id AS product_id,
+  CONCAT_WS(
+    ' ',
+    s.product_name,
+    NULLIF(s.brand_name, s.product_name),
+    s.size
+  ) AS name,
+  COALESCE(
+    ROUND(s.mrp * (1 - COALESCE(s.discount, 0) / 100), 2),
+    0
+  ) AS price,
+  s.mrp,
+  '${PLACEHOLDER_IMG}' AS image_url,
+  COALESCE(s.stock, 0) AS stock
+`;
+
 // Show cart
 exports.viewCart = async (req, res) => {
   try {
+    if (!req.session.user) {
+      return res.redirect('/login');
+    }
+
     const userId = req.session.user.id;
 
     const [items] = await db.query(
       `SELECT
          ci.id AS cart_id,
          ci.quantity,
-         p.id AS product_id,
-         p.name,
-         p.price,
-         p.mrp,
-         p.image_url,
-         p.stock,
-         (p.price * ci.quantity) AS line_total
+         ${ITEM_FIELDS},
+         COALESCE(
+           ROUND(s.mrp * (1 - COALESCE(s.discount, 0) / 100), 2)
+           * ci.quantity,
+           0
+         ) AS line_total
        FROM cart_items ci
-       JOIN products p ON p.id = ci.product_id
-       WHERE ci.user_id = ? AND p.is_active = 1`,
+       LEFT JOIN tm_cosmetics_stocks s
+         ON s.id = ci.product_id
+       WHERE ci.user_id = ?`,
       [userId]
     );
 
+    // Treat NULL or zero stock as unavailable
+    items.forEach(item => {
+      item.stock = Number(item.stock || 0);
+      item.quantity = Number(item.quantity || 0);
+      item.in_stock =
+        item.stock > 0 && item.quantity > 0 && item.quantity <= item.stock;
+    });
+
     const subtotal = items.reduce(
-      (sum, item) => sum + Number(item.line_total), 0
+      (sum, item) => sum + Number(item.line_total || 0),
+      0
     );
 
     res.render('cart', {
@@ -32,11 +65,13 @@ exports.viewCart = async (req, res) => {
       items,
       subtotal
     });
+
   } catch (error) {
     console.error('View cart error:', error);
     res.status(500).send('Unable to load cart.');
   }
 };
+
 
 // Add product to cart
 exports.addToCart = async (req, res) => {
@@ -46,81 +81,162 @@ exports.addToCart = async (req, res) => {
     }
 
     const userId = req.session.user.id;
-    const productId = Number(req.body.productId);
-    const quantity = Math.max(1, Number(req.body.quantity) || 1);
 
-    if (!Number.isInteger(productId) || productId <= 0) {
-      return res.status(400).send('Invalid product.');
+    const productId = Number(
+      req.body.productId || req.body.product_id
+    );
+
+    const quantity = Number(req.body.quantity || 1);
+
+    if (
+      !Number.isInteger(productId) ||
+      productId <= 0 ||
+      !Number.isInteger(quantity) ||
+      quantity < 1 ||
+      quantity > 100
+    ) {
+      return res.status(400).send('Invalid product or quantity.');
     }
 
     const [products] = await db.query(
-      'SELECT id, stock, is_active FROM products WHERE id = ?',
+      `SELECT id, mrp, COALESCE(stock, 0) AS stock
+       FROM tm_cosmetics_stocks
+       WHERE id = ?`,
       [productId]
     );
 
-    if (!products.length || !products[0].is_active) {
+    if (!products.length || products[0].mrp === null) {
       return res.status(404).send('Product not found.');
     }
 
-    if (quantity > products[0].stock) {
-      return res.status(400).send('Requested quantity is unavailable.');
+    const stock = Number(products[0].stock || 0);
+
+    if (stock <= 0) {
+      return res.status(400).send(
+        'Sorry, this product is currently out of stock.'
+      );
+    }
+
+    const [existing] = await db.query(
+      `SELECT quantity
+       FROM cart_items
+       WHERE user_id = ? AND product_id = ?`,
+      [userId, productId]
+    );
+
+    const inCart = existing.length
+      ? Number(existing[0].quantity)
+      : 0;
+
+    if (inCart + quantity > stock) {
+      return res.status(400).send(
+        `Only ${stock} units are available. You already have ${inCart} in your cart.`
+      );
     }
 
     await db.query(
       `INSERT INTO cart_items (user_id, product_id, quantity)
        VALUES (?, ?, ?)
-       ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity)`,
+       ON DUPLICATE KEY UPDATE
+       quantity = quantity + VALUES(quantity)`,
       [userId, productId, quantity]
     );
 
-    res.redirect('/cart');
+    return res.redirect('/cart');
+
   } catch (error) {
     console.error('Add to cart error:', error);
     res.status(500).send('Unable to add product to cart.');
   }
 };
 
-// Update quantity
+
+// Update cart quantity
 exports.updateCart = async (req, res) => {
   try {
+    if (!req.session.user) {
+      return res.redirect('/login');
+    }
+
     const userId = req.session.user.id;
     const cartId = Number(req.params.id);
     const quantity = Number(req.body.quantity);
 
-    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 100) {
-      return res.status(400).send('Invalid quantity.');
+    if (
+      !Number.isInteger(cartId) ||
+      cartId <= 0 ||
+      !Number.isInteger(quantity) ||
+      quantity < 1 ||
+      quantity > 100
+    ) {
+      return res.status(400).send('Invalid cart item or quantity.');
     }
 
-    const [result] = await db.query(
-      `UPDATE cart_items ci
-       JOIN products p ON p.id = ci.product_id
-       SET ci.quantity = ?
-       WHERE ci.id = ? AND ci.user_id = ? AND quantity <= p.stock`,
+    // Get this user's cart item and its latest stock
+    const [items] = await db.query(
+      `SELECT
+         ci.id,
+         ci.product_id,
+         COALESCE(s.stock, 0) AS stock
+       FROM cart_items ci
+       LEFT JOIN tm_cosmetics_stocks s
+         ON s.id = ci.product_id
+       WHERE ci.id = ? AND ci.user_id = ?`,
+      [cartId, userId]
+    );
+
+    if (!items.length) {
+      return res.status(404).send('Cart item not found.');
+    }
+
+    const stock = Number(items[0].stock || 0);
+
+    if (stock <= 0) {
+      return res.status(400).send(
+        'This product is currently out of stock.'
+      );
+    }
+
+    if (quantity > stock) {
+      return res.status(400).send(
+        `Only ${stock} units are available. Please enter a quantity up to ${stock}.`
+      );
+    }
+
+    await db.query(
+      `UPDATE cart_items
+       SET quantity = ?
+       WHERE id = ? AND user_id = ?`,
       [quantity, cartId, userId]
     );
 
-    if (!result.affectedRows) {
-      return res.status(400).send('Item not found or insufficient stock.');
-    }
+    return res.redirect('/cart');
 
-    res.redirect('/cart');
   } catch (error) {
     console.error('Update cart error:', error);
     res.status(500).send('Unable to update cart.');
   }
 };
 
-// Remove product
+
+// Remove product from cart
 exports.removeFromCart = async (req, res) => {
   try {
+    if (!req.session.user) {
+      return res.redirect('/login');
+    }
+
     const userId = req.session.user.id;
+    const cartId = Number(req.params.id);
 
     await db.query(
-      'DELETE FROM cart_items WHERE id = ? AND user_id = ?',
-      [req.params.id, userId]
+      `DELETE FROM cart_items
+       WHERE id = ? AND user_id = ?`,
+      [cartId, userId]
     );
 
-    res.redirect('/cart');
+    return res.redirect('/cart');
+
   } catch (error) {
     console.error('Remove cart item error:', error);
     res.status(500).send('Unable to remove item.');

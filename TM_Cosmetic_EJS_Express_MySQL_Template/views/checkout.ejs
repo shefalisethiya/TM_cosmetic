@@ -1,0 +1,498 @@
+
+<%- include('partials/header', { title }) %>
+
+<section class="page-banner">
+  <div class="eyebrow">TM COSMETIC · YOUR ORDER</div>
+  <h1>Complete your <em>purchase.</em></h1>
+  <p>Just a few details and your beauty essentials will be on their way.</p>
+</section>
+
+<section class="section checkout-page">
+
+  <div class="checkout-layout">
+
+    <!-- DELIVERY INFORMATION -->
+    <div class="checkout-form-section">
+
+      <div class="section-heading">
+        <div>
+          <div class="eyebrow">STEP 01</div>
+          <h2>Delivery <em>information.</em></h2>
+        </div>
+      </div>
+
+      <form action="/checkout" method="POST" id="checkoutForm">
+
+        <div class="checkout-fields">
+
+          <div class="form-group">
+            <label for="customer_name">Full Name *</label>
+            <input
+              type="text"
+              id="customer_name"
+              name="customer_name"
+              value="<%= customer.name || '' %>"
+              placeholder="Enter your full name"
+              maxlength="150"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="mobile">Mobile Number *</label>
+            <input
+              type="tel"
+              id="mobile"
+              name="mobile"
+              value="<%= customer.phone || '' %>"
+              placeholder="Enter 10-digit mobile number"
+              pattern="[0-9]{10}"
+              maxlength="10"
+              inputmode="numeric"
+              required
+            >
+          </div>
+
+          <div class="form-group full-width">
+            <label for="address">Complete Delivery Address *</label>
+            <textarea
+              id="address"
+              name="address"
+              rows="4"
+              placeholder="House number, street, area, landmark"
+              maxlength="1000"
+              required
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="city">City *</label>
+            <input
+              type="text"
+              id="city"
+              name="city"
+              placeholder="Enter your city"
+              maxlength="100"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="pincode">PIN Code *</label>
+            <input
+              type="text"
+              id="pincode"
+              name="pincode"
+              placeholder="6-digit PIN code"
+              pattern="[0-9]{6}"
+              maxlength="6"
+              inputmode="numeric"
+              required
+            >
+          </div>
+
+        </div>
+
+        <!-- PAYMENT METHOD -->
+        <div class="payment-section">
+
+          <div class="eyebrow">STEP 02</div>
+          <h2>Payment <em>method.</em></h2>
+
+          <!-- CASH ON DELIVERY -->
+          <label class="payment-option">
+            <input
+              type="radio"
+              name="payment_method"
+              value="COD"
+              checked
+              required
+            >
+
+            <span class="payment-content">
+              <strong>Cash on Delivery</strong>
+              <small>Pay when your order reaches your doorstep.</small>
+            </span>
+
+            <span class="payment-icon">₹</span>
+          </label>
+
+          <!-- CREDIT / DEBIT CARD -->
+          <label class="payment-option">
+            <input
+              type="radio"
+              name="payment_method"
+              value="CARD"
+            >
+
+            <span class="payment-content">
+              <strong>Credit / Debit Card</strong>
+              <small>Pay securely using Visa, Mastercard, RuPay and other supported cards.</small>
+            </span>
+
+            <span class="payment-icon">
+              <svg viewBox="0 0 24 24" width="25" height="25"
+                   fill="none" stroke="currentColor"
+                   stroke-width="1.7" stroke-linecap="round"
+                   stroke-linejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2"/>
+                <path d="M2 10h20"/>
+                <path d="M6 15h4"/>
+              </svg>
+            </span>
+          </label>
+
+          <!-- UPI -->
+          <label class="payment-option">
+            <input
+              type="radio"
+              name="payment_method"
+              value="UPI"
+            >
+
+            <span class="payment-content">
+              <strong>UPI Payment</strong>
+              <small>Pay using Google Pay, PhonePe, Paytm, BHIM and other UPI apps.</small>
+            </span>
+
+            <span class="payment-icon">
+              <svg viewBox="0 0 24 24" width="25" height="25"
+                   fill="none" stroke="currentColor"
+                   stroke-width="1.7" stroke-linecap="round"
+                   stroke-linejoin="round">
+                <rect x="5" y="2" width="14" height="20" rx="2"/>
+                <path d="M10 18h4"/>
+                <path d="m13 6-3 5h4l-3 5"/>
+              </svg>
+            </span>
+          </label>
+
+        </div>
+
+        <button type="submit" class="button checkout-submit">
+          Place Order <span>→</span>
+        </button>
+
+        <p class="checkout-note">
+          By placing your order, you agree to our terms and conditions.
+        </p>
+
+      </form>
+
+    </div>
+
+    <!-- ORDER SUMMARY -->
+    <aside class="checkout-summary">
+
+      <div class="eyebrow">YOUR SELECTION</div>
+      <h2>Order <em>summary.</em></h2>
+
+      <div class="checkout-products">
+
+        <% items.forEach(item => { %>
+
+          <div class="checkout-product">
+
+            <div class="checkout-product-image">
+              <img
+                src="<%= item.image_url %>"
+                alt="<%= item.name %>"
+              >
+            </div>
+
+            <div class="checkout-product-info">
+              <h4><%= item.name %></h4>
+              <small>Quantity: <%= item.quantity %></small>
+              <strong>
+                ₹<%= Number(item.line_total).toLocaleString('en-IN', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                }) %>
+              </strong>
+            </div>
+
+          </div>
+
+        <% }) %>
+
+      </div>
+
+      <div class="summary-divider"></div>
+
+      <div class="summary-row">
+        <span>Subtotal</span>
+        <strong>
+          ₹<%= Number(subtotal).toLocaleString('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          }) %>
+        </strong>
+      </div>
+
+      <div class="summary-row">
+        <span>Delivery Charges</span>
+        <strong class="free-delivery">FREE</strong>
+      </div>
+
+      <div class="summary-divider"></div>
+
+      <div class="summary-row summary-total">
+        <span>Total Amount</span>
+        <strong>
+          ₹<%= Number(subtotal).toLocaleString('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          }) %>
+        </strong>
+      </div>
+
+      <p class="secure-checkout">
+        <span>✦</span> Thank you for choosing TM Cosmetic.
+      </p>
+
+    </aside>
+
+  </div>
+
+</section>
+
+<style>
+.checkout-page {
+  padding-top: 55px;
+}
+
+.checkout-layout {
+  display: grid;
+  grid-template-columns: 1.5fr 0.9fr;
+  gap: 55px;
+  align-items: start;
+}
+
+.checkout-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  margin-top: 30px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.form-group label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 14px 15px;
+  border: 1px solid #ded8d4;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+  border-radius: 3px;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  border-color: #a66b73;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.payment-section {
+  margin-top: 45px;
+}
+
+.payment-section h2,
+.checkout-summary h2 {
+  margin-top: 10px;
+  margin-bottom: 22px;
+}
+
+.payment-option {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border: 1px solid #ded8d4;
+  background: #fff;
+  padding: 18px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.payment-option:has(input:checked) {
+  border-color: #c99a9e;
+  background: #fffafa;
+}
+
+.payment-option input {
+  accent-color: #a66b73;
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.payment-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.payment-content strong {
+  font-size: 14px;
+}
+
+.payment-content small {
+  color: #777;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.payment-icon {
+  font-size: 23px;
+  color: #a66b73;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.checkout-submit {
+  margin-top: 28px;
+  width: 100%;
+  border: none;
+  cursor: pointer;
+}
+
+.checkout-note {
+  font-size: 11px;
+  color: #777;
+  margin-top: 13px;
+}
+
+.checkout-summary {
+  background: #faf7f4;
+  padding: 28px;
+  position: sticky;
+  top: 25px;
+}
+
+.checkout-products {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 25px;
+}
+
+.checkout-product {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.checkout-product-image {
+  width: 75px;
+  height: 85px;
+  background: #eee8e4;
+  flex-shrink: 0;
+}
+
+.checkout-product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.checkout-product-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.checkout-product-info h4 {
+  font-size: 13px;
+  margin: 0;
+}
+
+.checkout-product-info small {
+  color: #777;
+  font-size: 12px;
+}
+
+.checkout-product-info strong {
+  font-size: 13px;
+}
+
+.summary-divider {
+  border-top: 1px solid #ded8d4;
+  margin: 22px 0;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  margin: 14px 0;
+}
+
+.free-delivery {
+  color: #56835c;
+}
+
+.summary-total {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.secure-checkout {
+  margin-top: 25px;
+  font-size: 12px;
+  color: #777;
+  text-align: center;
+}
+
+.secure-checkout span {
+  color: #a66b73;
+}
+
+@media (max-width: 800px) {
+  .checkout-layout {
+    grid-template-columns: 1fr;
+    gap: 35px;
+  }
+
+  .checkout-summary {
+    position: static;
+  }
+}
+
+@media (max-width: 520px) {
+  .checkout-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .full-width {
+    grid-column: auto;
+  }
+
+  .payment-option {
+    padding: 14px;
+    gap: 10px;
+  }
+}
+</style>
+
+<%- include('partials/footer') %>

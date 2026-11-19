@@ -333,3 +333,134 @@ section.section .cart-layout{
   .cart-layout .cart-item{ grid-template-columns:100px 1fr !important; }
   .cart-layout .cart-item .product-image{ width:100px !important; height:100px !important; }
 }
+/* Product image container */
+.detail-image {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Product image */
+.detail-image {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Out of stock image */
+.detail-image img {
+  display: block;
+  width: 100%;
+}
+
+.detail-image:has(.out-of-stock-overlay) img {
+  opacity: 0.45;
+  filter: grayscale(70%);
+}
+
+/* Out of stock overlay */
+.out-of-stock-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.20);
+  pointer-events: none;
+}
+
+.out-of-stock-overlay span {
+  background: #333;
+  color: #fff;
+  padding: 14px 28px;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  transform: rotate(-12deg);
+}
+
+/* In stock badge */
+.in-stock-badge {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  z-index: 5;
+  background: #287d45;
+  color: white;
+  padding: 7px 13px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  border-radius: 3px;
+}
+
+/* Disabled button */
+.detail-copy .button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+/* Cart stock availability */
+
+.cart-stock-available {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #198754;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 10px 0;
+}
+
+.cart-stock-unavailable {
+  background: #fff1f1;
+  border: 1px solid #f2caca;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 12px 0;
+  color: #b42318;
+}
+
+.cart-stock-unavailable strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.cart-stock-unavailable p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.qty-form {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.qty-form input {
+  width: 85px;
+  padding: 9px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+.disabled-cart {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.cart-summary .out-stock-text {
+  color: #b42318;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 12px 0;
+}
+
+.cart-summary .summary-checkout {
+  display: block;
+  width: 100%;
+  text-align: center;
+  box-sizing: border-box;
+}

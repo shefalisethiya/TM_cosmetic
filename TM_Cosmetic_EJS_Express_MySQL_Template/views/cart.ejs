@@ -1,76 +1,241 @@
 <%- include('partials/header', { title }) %>
 
+<%
+  // Check whether any cart item has invalid quantity or unavailable stock
+  const hasUnavailableItems = items.some(item => {
+    const stock = Number(item.stock || 0);
+    const quantity = Number(item.quantity || 0);
+
+    return stock <= 0 || quantity <= 0 || quantity > stock;
+  });
+%>
+
 <section class="section">
+
   <div class="section-heading">
     <div>
-      <div class="eyebrow">YOUR SHOPPING BAG</div>
-      <h2>Your <em>cart.</em></h2>
+      <div class="eyebrow">YOUR SELECTION</div>
+      <h1>Your Shopping Basket</h1>
+      <p>Review your products before checkout.</p>
     </div>
-    <span class="result-count"><%= items.length %> items</span>
+
+    <span class="result-count">
+      <%= items.length %> items
+    </span>
   </div>
 
   <% if (!items.length) { %>
 
     <div class="empty-state">
-      <h3>Your cart is empty</h3>
-      <p>Discover your favourite beauty essentials.</p>
-      <a href="/products" class="button">Continue Shopping →</a>
+      <h2>Your basket is empty</h2>
+      <p>Add some beauty and care essentials to continue.</p>
+      <a href="/products" class="button">
+        Explore Products
+      </a>
     </div>
 
   <% } else { %>
 
-    <!-- NEW: wrapper that puts items and summary side by side -->
     <div class="cart-layout">
 
-      <!-- LEFT: items -->
       <div class="cart-items">
+
         <% items.forEach(item => { %>
+
+          <%
+            const availableStock = Number(item.stock || 0);
+            const itemQuantity = Number(item.quantity || 0);
+
+            const quantityAllowed =
+              availableStock > 0 &&
+              itemQuantity > 0 &&
+              itemQuantity <= availableStock;
+          %>
+
           <article class="product-card cart-item">
 
-            <a class="product-image" href="/products/<%= item.product_id %>">
-              <img src="<%= item.image_url %>" alt="<%= item.name %>">
+            <a
+              class="product-image"
+              href="/products/<%= item.product_id %>"
+            >
+              <img
+                src="<%= item.image_url || '/images/placeholder.jpg' %>"
+                alt="<%= item.name %>"
+              >
             </a>
 
             <div class="product-info">
-              <small>YOUR BEAUTY SELECTION</small>
-              <h3><%= item.name %></h3>
-              <p>Price: ₹<%= Number(item.price).toLocaleString('en-IN') %></p>
-              <p>Subtotal: ₹<%= Number(item.line_total).toLocaleString('en-IN') %></p>
 
-              <form action="/cart/update/<%= item.cart_id %>" method="POST" class="qty-form">
-                <label>Quantity</label>
-                <input type="number" name="quantity" value="<%= item.quantity %>"
-                       min="1" max="<%= item.stock %>" required>
-                <button type="submit" class="button">Update Cart</button>
+              <small class="product-category">
+                YOUR BEAUTY SELECTION
+              </small>
+
+              <h3 class="product-name">
+                <%= item.name %>
+              </h3>
+
+              <p>
+                Price:
+                <strong>
+                  ₹<%= Number(item.price).toLocaleString('en-IN') %>
+                </strong>
+              </p>
+
+              <p>
+                Subtotal:
+                <strong>
+                  ₹<%= Number(item.line_total).toLocaleString('en-IN') %>
+                </strong>
+              </p>
+
+              <% if (quantityAllowed) { %>
+
+                <div class="cart-stock-available">
+                  <span class="stock-dot"></span>
+                  Available: <%= availableStock %> units
+                </div>
+
+                <form
+                  action="/cart/update/<%= item.cart_id %>"
+                  method="POST"
+                  class="qty-form"
+                >
+
+                  <label for="quantity-<%= item.cart_id %>">
+                    Quantity
+                  </label>
+
+                  <input
+                    id="quantity-<%= item.cart_id %>"
+                    type="number"
+                    name="quantity"
+                    value="<%= itemQuantity %>"
+                    min="1"
+                    max="<%= availableStock %>"
+                    required
+                  >
+
+                  <button type="submit" class="button">
+                    Update Cart
+                  </button>
+
+                </form>
+
+              <% } else { %>
+
+                <div class="cart-stock-unavailable">
+                  <strong>Item Unavailable</strong>
+
+                  <% if (availableStock <= 0) { %>
+                    <p>This product is currently out of stock.</p>
+                  <% } else { %>
+                    <p>
+                      You selected <%= itemQuantity %> units,
+                      but only <%= availableStock %> units are available.
+                    </p>
+                  <% } %>
+                </div>
+
+                <% if (availableStock > 0) { %>
+
+                  <form
+                    action="/cart/update/<%= item.cart_id %>"
+                    method="POST"
+                    class="qty-form"
+                  >
+
+                    <label for="quantity-<%= item.cart_id %>">
+                      Update to available quantity
+                    </label>
+
+                    <input
+                      id="quantity-<%= item.cart_id %>"
+                      type="number"
+                      name="quantity"
+                      value="<%= availableStock %>"
+                      min="1"
+                      max="<%= availableStock %>"
+                      required
+                    >
+
+                    <button type="submit" class="button">
+                      Update Quantity
+                    </button>
+
+                  </form>
+
+                <% } %>
+
+              <% } %>
+
+              <form
+                action="/cart/remove/<%= item.cart_id %>"
+                method="POST"
+              >
+                <button type="submit" class="text-link">
+                  Remove Item
+                </button>
               </form>
 
-              <form action="/cart/remove/<%= item.cart_id %>" method="POST">
-                <button type="submit" class="text-link">Remove Item</button>
-              </form>
             </div>
 
           </article>
+
         <% }) %>
+
       </div>
 
-      <!-- RIGHT: order summary -->
       <aside class="cart-summary">
+
         <h3>Order Summary</h3>
 
         <p class="summary-row">
           <span>Subtotal</span>
-          <strong>₹<%= Number(subtotal).toLocaleString('en-IN') %></strong>
+
+          <strong>
+            ₹<%= Number(subtotal).toLocaleString('en-IN') %>
+          </strong>
         </p>
 
-        <p class="summary-note">Delivery charges calculated at checkout.</p>
+        <p class="summary-note">
+          Delivery charges calculated at checkout.
+        </p>
 
-        <a href="/checkout" class="button summary-checkout">Proceed to Checkout →</a>
-        <a href="/products" class="text-link">← Continue Shopping</a>
+        <% if (hasUnavailableItems) { %>
+
+          <button
+            type="button"
+            class="button summary-checkout disabled-cart"
+            disabled
+          >
+            Checkout Unavailable
+          </button>
+
+          <p class="out-stock-text">
+            Please correct or remove unavailable products before checkout.
+          </p>
+
+        <% } else { %>
+
+          <a
+            href="/checkout"
+            class="button summary-checkout"
+          >
+            Proceed to Checkout →
+          </a>
+
+        <% } %>
+
+        <a href="/products" class="text-link">
+          ← Continue Shopping
+        </a>
+
       </aside>
 
     </div>
 
   <% } %>
+
 </section>
 
 <%- include('partials/footer') %>

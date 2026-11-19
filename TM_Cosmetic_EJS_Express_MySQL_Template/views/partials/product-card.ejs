@@ -1,44 +1,108 @@
 
+<%
+  const inStock =
+    product.in_stock === true ||
+    Number(product.stock) > 0;
+
+  const price = Number(product.price || 0);
+  const mrp = Number(product.mrp || 0);
+
+  const discount = mrp > price && mrp > 0
+    ? Math.round(((mrp - price) / mrp) * 100)
+    : 0;
+%>
+
 <article class="product-card">
+
+  <!-- Product Image -->
   <a class="product-image" href="/products/<%= product.id %>">
+
+    <% if (discount > 0) { %>
+      <span class="product-discount">
+        <%= discount %>% OFF
+      </span>
+    <% } %>
+
+    <% if (!inStock) { %>
+      <span class="product-stock-badge">
+        OUT OF STOCK
+      </span>
+    <% } %>
+
     <img
-      src="<%= product.image_url %>"
+      src="<%= product.image_url || '/images/placeholder.jpg' %>"
       alt="<%= product.name %>"
       loading="lazy"
     >
 
-    <% if (product.mrp && Number(product.mrp) > Number(product.price)) { %>
-      <span class="tag">SPECIAL PRICE</span>
-    <% } %>
   </a>
 
+  <!-- Product Details -->
   <div class="product-info">
-    <small>
-      <%= product.category_name || product.category || 'BEAUTY' %>
+
+    <small class="product-category">
+      <%= product.category_name || product.category || 'BEAUTY & CARE' %>
     </small>
 
-    <h3>
+    <h3 class="product-name">
       <a href="/products/<%= product.id %>">
         <%= product.name %>
       </a>
     </h3>
 
-    <div>
-      <b>₹<%= Number(product.price).toLocaleString('en-IN') %></b>
+    <div class="product-price">
 
-      <% if (product.mrp) { %>
-        <del>₹<%= Number(product.mrp).toLocaleString('en-IN') %></del>
+      <span class="current-price">
+        ₹<%= price.toLocaleString('en-IN') %>
+      </span>
+
+      <% if (discount > 0) { %>
+        <del class="old-price">
+          ₹<%= mrp.toLocaleString('en-IN') %>
+        </del>
+
+        <span class="saving-text">
+          Save <%= discount %>%
+        </span>
       <% } %>
+
     </div>
 
-    <!-- ADD TO CART -->
-    <form action="/cart/add" method="POST" class="add-to-cart-form">
-      <input type="hidden" name="productId" value="<%= product.id %>">
-      <input type="hidden" name="quantity" value="1">
+    <!-- Stock Status -->
+    <div class="product-stock">
 
-      <button type="submit" class="add-to-cart-btn">
-        Add to Cart
+      <% if (inStock) { %>
+        <span class="stock-dot"></span>
+        <span class="in-stock-text">In Stock</span>
+      <% } else { %>
+        <span class="out-stock-dot"></span>
+        <!-- <span class="out-stock-text">Out of Stock</span> -->
+      <% } %>
+
+    </div>
+
+    <!-- Add to Cart -->
+    <% if (inStock) { %>
+
+      <form action="/cart/add" method="POST" class="add-to-cart-form">
+
+        <input type="hidden" name="productId" value="<%= product.id %>">
+        <input type="hidden" name="quantity" value="1">
+
+        <button type="submit" class="add-to-cart-btn">
+          <span>＋</span> Add to Cart
+        </button>
+
+      </form>
+
+    <% } else { %>
+
+      <button type="button" class="add-to-cart-btn disabled-cart" disabled>
+        Out of Stock
       </button>
-    </form>
+
+    <% } %>
+
   </div>
+
 </article>

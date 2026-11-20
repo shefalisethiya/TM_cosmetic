@@ -1,7 +1,9 @@
+
 <%- include('../partials/header', { title }) %>
 
 <section class="auth-page">
   <div class="auth-card">
+
     <span class="auth-eyebrow">SECURE LOGIN</span>
 
     <h1>Verify <em>OTP</em></h1>
@@ -11,10 +13,20 @@
     </p>
 
     <% if (error) { %>
-      <div class="auth-alert"><%= error %></div>
+      <div class="auth-alert">
+        <%= error %>
+      </div>
     <% } %>
 
+    <% if (message) { %>
+      <div class="auth-success">
+        <%= message %>
+      </div>
+    <% } %>
+
+    <!-- OTP VERIFICATION FORM -->
     <form class="auth-form" action="/verify-otp" method="POST">
+
       <label for="otp">Enter OTP</label>
 
       <input
@@ -32,13 +44,18 @@
       <button class="button auth-submit" type="submit">
         VERIFY OTP <span>→</span>
       </button>
+
     </form>
 
-    <form action="/resend-otp" method="POST">
+    <!-- RESEND OTP FORM -->
+    <form action="/resend-otp" method="POST" class="auth-form">
+
       <button type="submit" class="button">
-        Resend OTP
+        RESEND OTP
       </button>
+
     </form>
+
   </div>
 </section>
 

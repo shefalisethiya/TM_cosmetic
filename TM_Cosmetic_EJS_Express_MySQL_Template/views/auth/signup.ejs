@@ -1,24 +1,83 @@
+
 <%- include('../partials/header', { title }) %>
+
 <section class="auth-page">
   <div class="auth-card auth-card-wide">
     <span class="auth-eyebrow">JOIN OUR BEAUTY COMMUNITY</span>
     <h1>Create <em>Account</em></h1>
-    <p class="auth-intro">Create an account for a smoother shopping experience.</p>
-    <% if (error) { %><div class="auth-alert"><%= error %></div><% } %>
+    <p class="auth-intro">
+      Create an account for a smoother shopping experience.
+    </p>
+
+    <% if (error) { %>
+      <div class="auth-alert"><%= error %></div>
+    <% } %>
+
     <form class="auth-form" action="/signup" method="POST">
+
       <label for="name">Full name</label>
-      <input id="name" name="name" type="text" autocomplete="name" value="<%= name %>" placeholder="Your full name" minlength="2" required>
+      <input id="name" name="name" type="text"
+        autocomplete="name" value="<%= name || '' %>"
+        placeholder="Your full name" minlength="2" required>
+
       <label for="email">Email address</label>
-      <input id="email" name="email" type="email" autocomplete="email" value="<%= email %>" placeholder="you@example.com" required>
-      <label for="phone">Mobile number <span class="optional-label">(optional)</span></label>
-      <input id="phone" name="phone" type="tel" autocomplete="tel" value="<%= phone %>" placeholder="Your mobile number">
+      <input id="email" name="email" type="email"
+        autocomplete="email" value="<%= email || '' %>"
+        placeholder="you@example.com" required>
+
+      <label for="phone">
+        Mobile number <span class="optional-label">(optional)</span>
+      </label>
+      <input id="phone" name="phone" type="tel"
+        autocomplete="tel" value="<%= phone || '' %>"
+        placeholder="Your mobile number">
+
+      
+<label>Join As</label>
+
+<div class="join-role-options">
+
+  <label class="role-option">
+    <input
+      type="radio"
+      name="joinas"
+      value="2"
+      required
+    >
+    <span>B2B User</span>
+  </label>
+
+  <label class="role-option">
+    <input
+      type="radio"
+      name="joinas"
+      value="3"
+    >
+    <span>B2C User</span>
+  </label>
+
+</div>
+
+
       <label for="password">Password</label>
-      <input id="password" name="password" type="password" autocomplete="new-password" placeholder="At least 8 characters" minlength="8" required>
+      <input id="password" name="password" type="password"
+        autocomplete="new-password"
+        placeholder="At least 8 characters" minlength="8" required>
+
       <label for="confirmPassword">Confirm password</label>
-      <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" placeholder="Enter password again" minlength="8" required>
-      <button class="button auth-submit" type="submit">CREATE ACCOUNT <span>→</span></button>
+      <input id="confirmPassword" name="confirmPassword" type="password"
+        autocomplete="new-password"
+        placeholder="Enter password again" minlength="8" required>
+
+      <button class="button auth-submit" type="submit">
+        CREATE ACCOUNT <span>→</span>
+      </button>
     </form>
-    <p class="auth-switch">Already have an account? <a href="/login">Sign in</a></p>
+
+    <p class="auth-switch">
+      Already have an account? <a href="/login">Sign in</a>
+    </p>
   </div>
 </section>
+
 <%- include('../partials/footer') %>

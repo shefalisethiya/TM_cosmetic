@@ -19,23 +19,28 @@ function requireLogin(req, res, next) {
 
 // CHECK CONTROLLER FUNCTIONS
 const controllerFunctions = {
+  // Store
   'store.home': store.home,
   'store.products': store.products,
   'store.productDetails': store.productDetails,
 
+  // Authentication
   'auth.showLogin': auth.showLogin,
   'auth.loginWithOTP': auth.loginWithOTP,
   'auth.showVerifyOTP': auth.showVerifyOTP,
   'auth.verifyOTP': auth.verifyOTP,
   'auth.showSignup': auth.showSignup,
   'auth.signup': auth.signup,
+  'auth.resendOTP': auth.resendOTP,
   'auth.logout': auth.logout,
 
+  // Cart
   'cart.viewCart': cart.viewCart,
   'cart.addToCart': cart.addToCart,
   'cart.updateCart': cart.updateCart,
   'cart.removeFromCart': cart.removeFromCart,
 
+  // Checkout
   'checkout.showCheckout': checkout.showCheckout,
   'checkout.placeOrder': checkout.placeOrder,
   'checkout.orderSuccess': checkout.orderSuccess
@@ -61,12 +66,13 @@ router.post('/login', auth.loginWithOTP);
 // OTP VERIFICATION
 router.get('/verify-otp', auth.showVerifyOTP);
 router.post('/verify-otp', auth.verifyOTP);
+router.post('/resend-otp', auth.resendOTP);
 
 // CUSTOMER SIGNUP
 router.get('/signup', auth.showSignup);
 router.post('/signup', auth.signup);
 
-// CUSTOMER LOGOUT
+// LOGOUT
 router.post('/logout', requireLogin, auth.logout);
 
 // PRODUCTS

@@ -7,7 +7,9 @@ const db = require('../config/db');
 // SHOW LOGIN PAGE
 // ==========================================
 exports.showLogin = (req, res) => {
-  if (req.session.user) return res.redirect('/');
+  if (req.session.user) {
+    return res.redirect('/');
+  }
 
   res.render('auth/login', {
     title: 'Sign In | TM Cosmetic',
@@ -20,7 +22,9 @@ exports.showLogin = (req, res) => {
 // SHOW SIGNUP PAGE
 // ==========================================
 exports.showSignup = (req, res) => {
-  if (req.session.user) return res.redirect('/');
+  if (req.session.user) {
+    return res.redirect('/');
+  }
 
   res.render('auth/signup', {
     title: 'Create Account | TM Cosmetic',
@@ -58,7 +62,6 @@ exports.signup = async (req, res) => {
     return renderError('Please enter your full name.');
   }
 
-  // Correct email validation
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return renderError('Please enter a valid email address.');
   }
@@ -90,31 +93,15 @@ exports.signup = async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
-    const [result] = await db.execute(
+    await db.execute(
       `INSERT INTO users
        (name, email, phone, password_hash, joinas, role_id)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [name, email, phone || null, passwordHash, joinas, joinas]
     );
 
-    // Existing signup behavior: automatically sign in after registration
-    req.session.user = {
-      id: result.insertId,
-      name,
-      email,
-      role_id: joinas
-    };
-
-    return req.session.save(err => {
-      if (err) {
-        console.error('Signup session error:', err.message);
-        return res.status(500).send(
-          'Account created, but sign-in could not be started. Please sign in.'
-        );
-      }
-
-      return res.redirect('/');
-    });
+    // After registration, redirect the customer to login.
+    return res.redirect('/login');
 
   } catch (error) {
     console.error('Signup error:', error.code || error.message);
@@ -179,7 +166,9 @@ exports.loginWithOTP = async (req, res) => {
     const roleId = Number(user.role_id);
 
     if (![1, 2, 3, 4, 5].includes(roleId)) {
-      return renderError('Your account has an invalid role. Please contact support.');
+      return renderError(
+        'Your account has an invalid role. Please contact support.'
+      );
     }
 
     if (!user.phone) {
@@ -295,7 +284,9 @@ exports.verifyOTP = async (req, res) => {
     );
 
     if (!otpRows.length) {
-      return renderError('OTP not found or expired. Please request a new OTP.');
+      return renderError(
+        'OTP not found or expired. Please request a new OTP.'
+      );
     }
 
     const otpRecord = otpRows[0];
@@ -315,7 +306,9 @@ exports.verifyOTP = async (req, res) => {
         [userId]
       );
 
-      return renderError('Too many incorrect attempts. Please log in again.');
+      return renderError(
+        'Too many incorrect attempts. Please log in again.'
+      );
     }
 
     const isMatch = await bcrypt.compare(otp, otpRecord.otp_hash);
@@ -344,7 +337,9 @@ exports.verifyOTP = async (req, res) => {
     const user = users[0];
 
     if (![1, 2, 3, 4, 5].includes(Number(user.role_id))) {
-      return renderError('Invalid account role. Please contact support.');
+      return renderError(
+        'Invalid account role. Please contact support.'
+      );
     }
 
     await db.execute(
@@ -356,7 +351,9 @@ exports.verifyOTP = async (req, res) => {
     req.session.regenerate(err => {
       if (err) {
         console.error('Session regeneration error:', err.message);
-        return res.status(500).send('Unable to complete login. Please try again.');
+        return res.status(500).send(
+          'Unable to complete login. Please try again.'
+        );
       }
 
       req.session.user = {
@@ -372,7 +369,15 @@ exports.verifyOTP = async (req, res) => {
           return res.status(500).send('Unable to complete login.');
         }
 
-        // Keep the existing home redirect until role dashboards are created.
+        // Super Admin: User ID 1 and Role ID 1
+        if (
+          Number(user.id) === 1 &&
+          Number(user.role_id) === 1
+        ) {
+          return res.redirect('/super-admin/dashboard');
+        }
+
+        // Other users
         return res.redirect('/');
       });
     });
@@ -468,7 +473,9 @@ exports.logout = (req, res) => {
   req.session.destroy(err => {
     if (err) {
       console.error('Logout error:', err.message);
-      return res.status(500).send('Unable to log out. Please try again.');
+      return res.status(500).send(
+        'Unable to log out. Please try again.'
+      );
     }
 
     res.clearCookie('tmcosmetic.sid');

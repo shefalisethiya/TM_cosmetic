@@ -1,0 +1,90 @@
+
+<%- include('../partials/header', { title }) %>
+
+<section class="auth-page">
+  <div class="auth-card">
+    <span class="auth-eyebrow">SUPER ADMIN ACCESS</span>
+    <h1>Create <em>Staff Account</em></h1>
+    <p class="auth-intro">
+      Register a new Admin or Delivery Person.
+    </p>
+
+    <% if (error) { %>
+      <div class="auth-alert"><%= error %></div>
+    <% } %>
+
+    <form
+      action="/super-admin/staff/create"
+      method="POST"
+      class="auth-form"
+    >
+      <label for="name">Full Name</label>
+      <input
+        id="name"
+        name="name"
+        type="text"
+        value="<%= formData.name %>"
+        required
+      >
+
+      <label for="email">Email Address</label>
+      <input
+        id="email"
+        name="email"
+        type="email"
+        value="<%= formData.email %>"
+        required
+      >
+
+      <label for="phone">Mobile Number</label>
+      <input
+        id="phone"
+        name="phone"
+        type="tel"
+        value="<%= formData.phone %>"
+        required
+      >
+
+      <label for="role_id">Account Type</label>
+      <select id="role_id" name="role_id" required>
+        <option value="">Select Account Type</option>
+        <option value="5" <%= String(formData.role_id) === '5' ? 'selected' : '' %>>
+          Admin
+        </option>
+        <option value="4" <%= String(formData.role_id) === '4' ? 'selected' : '' %>>
+          Delivery Person
+        </option>
+      </select>
+
+      <label for="password">Password</label>
+      <input
+        id="password"
+        name="password"
+        type="password"
+        minlength="8"
+        autocomplete="new-password"
+        required
+      >
+
+      <label for="confirmPassword">Confirm Password</label>
+      <input
+        id="confirmPassword"
+        name="confirmPassword"
+        type="password"
+        minlength="8"
+        autocomplete="new-password"
+        required
+      >
+
+      <button type="submit" class="button auth-submit">
+        CREATE STAFF ACCOUNT
+      </button>
+    </form>
+
+    <p style="margin-top:20px;">
+      <a href="/super-admin/staff">Back to Staff Management</a>
+    </p>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

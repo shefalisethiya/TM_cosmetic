@@ -506,3 +506,28 @@ section.section .cart-layout{
     grid-template-columns: 1fr;
   }
 }
+.admin-stat-link {
+  display: block;
+  text-decoration: none !important;
+  color: inherit !important;
+  min-width: 0;
+}
+
+.super-admin-page .admin-stat-link .admin-stat-card {
+  height: 100%;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.super-admin-page .admin-stat-link:hover .admin-stat-card {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(80,40,45,0.12);
+}
+
+.admin-stat-link span {
+  display: inline-block;
+  margin-top: 15px;
+  color: #8b6265;
+  font-size: 13px;
+  font-weight: 600;
+}

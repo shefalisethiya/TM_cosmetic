@@ -94,6 +94,23 @@
   color: #ffffff !important;
 }
 
+/* ITEM MANAGEMENT HEADING */
+
+.admin-nav-heading {
+  padding: 15px 15px 5px;
+  color: #e8cfd1;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.super-admin-page .admin-sidebar-nav a.admin-nav-subitem {
+  padding-left: 28px !important;
+}
+
+/* LOGOUT */
+
 .admin-sidebar-logout {
   margin-top: auto !important;
   padding-top: 30px;
@@ -168,8 +185,17 @@
   margin: 0 !important;
 }
 
+.admin-stat-link {
+  display: block;
+  min-width: 0;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
 .super-admin-page .admin-stat-card {
   display: block !important;
+  height: 100%;
   min-width: 0;
   padding: 25px !important;
   margin: 0 !important;
@@ -177,6 +203,12 @@
   border: 1px solid #eadadd !important;
   border-radius: 8px;
   box-shadow: 0 3px 12px rgba(80,40,45,0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.super-admin-page .admin-stat-link:hover .admin-stat-card {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 16px rgba(80,40,45,0.12);
 }
 
 .super-admin-page .admin-stat-card h3 {
@@ -192,6 +224,13 @@
   font-weight: 700;
   line-height: 1.2;
   margin: 0 !important;
+}
+
+.admin-stat-card span {
+  display: block;
+  margin-top: 12px;
+  color: #a46d70;
+  font-size: 13px;
 }
 
 /* TABLET */
@@ -272,11 +311,31 @@
           Create Admin / Delivery
         </a>
 
+        <a href="/super-admin/users/all">
+          Manage Users
+        </a>
+
+        <!-- ITEM MANAGEMENT -->
+
+        <div class="admin-nav-heading">
+          Item Management
+        </div>
+
+        <a href="/manage-products/add" class="admin-nav-subitem">
+          + Add Item
+        </a>
+
+        <a href="/manage-products" class="admin-nav-subitem">
+          View / Read Items
+        </a>
+
         <a href="/">
           Visit Store
         </a>
 
       </nav>
+
+      <!-- LOGOUT -->
 
       <div class="admin-sidebar-logout">
         <form action="/logout" method="POST">
@@ -312,35 +371,53 @@
 
       <div class="admin-stats">
 
-        <div class="admin-stat-card">
-          <h3>Total Users</h3>
-          <p><%= stats.total_users || 0 %></p>
-        </div>
+        <a href="/super-admin/users/all" class="admin-stat-link">
+          <div class="admin-stat-card">
+            <h3>Total Users</h3>
+            <p><%= stats.total_users || 0 %></p>
+            <span>View all users →</span>
+          </div>
+        </a>
 
-        <div class="admin-stat-card">
-          <h3>Super Admins</h3>
-          <p><%= stats.super_admins || 0 %></p>
-        </div>
+        <a href="/super-admin/users/super-admin" class="admin-stat-link">
+          <div class="admin-stat-card">
+            <h3>Super Admins</h3>
+            <p><%= stats.super_admins || 0 %></p>
+            <span>View Super Admins →</span>
+          </div>
+        </a>
 
-        <div class="admin-stat-card">
-          <h3>Admins</h3>
-          <p><%= stats.admins || 0 %></p>
-        </div>
+        <a href="/super-admin/users/admin" class="admin-stat-link">
+          <div class="admin-stat-card">
+            <h3>Admins</h3>
+            <p><%= stats.admins || 0 %></p>
+            <span>View Admins →</span>
+          </div>
+        </a>
 
-        <div class="admin-stat-card">
-          <h3>Delivery Persons</h3>
-          <p><%= stats.delivery_users || 0 %></p>
-        </div>
+        <a href="/super-admin/users/delivery" class="admin-stat-link">
+          <div class="admin-stat-card">
+            <h3>Delivery Persons</h3>
+            <p><%= stats.delivery_users || 0 %></p>
+            <span>View Delivery Persons →</span>
+          </div>
+        </a>
 
-        <div class="admin-stat-card">
-          <h3>B2B Users</h3>
-          <p><%= stats.b2b_users || 0 %></p>
-        </div>
+        <a href="/super-admin/users/b2b" class="admin-stat-link">
+          <div class="admin-stat-card">
+            <h3>B2B Users</h3>
+            <p><%= stats.b2b_users || 0 %></p>
+            <span>View B2B Users →</span>
+          </div>
+        </a>
 
-        <div class="admin-stat-card">
-          <h3>B2C Users</h3>
-          <p><%= stats.b2c_users || 0 %></p>
-        </div>
+        <a href="/super-admin/users/b2c" class="admin-stat-link">
+          <div class="admin-stat-card">
+            <h3>B2C Users</h3>
+            <p><%= stats.b2c_users || 0 %></p>
+            <span>View B2C Users →</span>
+          </div>
+        </a>
 
       </div>
 

@@ -72,3 +72,23 @@ exports.requireB2B = (req, res, next) => {
 exports.requireB2C = (req, res, next) => {
   return exports.requireRole(3)(req, res, next);
 };
+// ==========================================
+// PRODUCT CRUD PERMISSION
+// Super Admin, Admin and Delivery Person
+// ==========================================
+exports.requireProductManagement = (req, res, next) => {
+  if (!req.session || !req.session.user) {
+    return res.redirect('/login');
+  }
+
+  const roleId = Number(req.session.user.role_id);
+
+  if (![1, 4, 5].includes(roleId)) {
+    return res.status(403).render('errors/403', {
+      title: 'Access Denied',
+      message: 'You do not have permission to manage products.'
+    });
+  }
+
+  next();
+};

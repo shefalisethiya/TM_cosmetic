@@ -1,0 +1,476 @@
+
+<%- include('../partials/header', { title }) %>
+
+<style>
+  .users-page {
+    min-height: 650px;
+    padding: 40px 25px;
+    background: #fff5f6;
+  }
+
+  .users-container {
+    width: 100%;
+    max-width: 1500px;
+    margin: 0 auto;
+    padding: 35px;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  }
+
+  .users-heading {
+    color: #603b4c;
+    margin-bottom: 10px;
+  }
+
+  .users-description {
+    color: #777;
+    margin-bottom: 20px;
+  }
+
+  .users-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+
+  .back-btn {
+    display: inline-block;
+    padding: 10px 18px;
+    background: #75475f;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+  }
+
+  .back-btn:hover {
+    background: #593448;
+    color: white;
+  }
+
+  .success-message {
+    padding: 12px 16px;
+    margin-bottom: 18px;
+    color: #155724;
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 5px;
+  }
+
+  .table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .users-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1150px;
+  }
+
+  .users-table th {
+    padding: 14px 12px;
+    background: #75475f;
+    color: #fff;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .users-table td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+  }
+
+  .users-table tbody tr:hover {
+    background: #fff8fa;
+  }
+
+  .role-label {
+    font-weight: 600;
+    color: #75475f;
+  }
+
+  .permission-form {
+    min-width: 245px;
+  }
+
+  .permission-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(85px, 1fr));
+    gap: 9px;
+    margin-bottom: 12px;
+  }
+
+  .permission-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #444;
+    cursor: pointer;
+  }
+
+  .permission-check input {
+    width: 16px;
+    height: 16px;
+    accent-color: #75475f;
+    cursor: pointer;
+  }
+
+  .save-permission-btn {
+    padding: 8px 13px;
+    background: #75475f;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+
+  .save-permission-btn:hover {
+    background: #593448;
+  }
+
+  .protected-label {
+    display: inline-block;
+    color: #198754;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .user-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .edit-btn,
+  .delete-btn {
+    display: inline-block;
+    padding: 7px 12px;
+    text-align: center;
+    border-radius: 4px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+  }
+
+  .edit-btn {
+    background: #e8d5df;
+    color: #603b4c;
+  }
+
+  .delete-btn {
+    background: #dc3545;
+    color: #fff;
+  }
+
+  .delete-btn:hover {
+    background: #b02a37;
+  }
+
+  .edit-btn:hover {
+    background: #d9bdcb;
+  }
+
+  .empty-message {
+    text-align: center;
+    padding: 30px;
+    color: #777;
+  }
+
+  .records-count {
+    color: #75475f;
+    font-weight: 600;
+    margin-top: 18px;
+  }
+
+  @media (max-width: 768px) {
+    .users-page {
+      padding: 20px 10px;
+    }
+
+    .users-container {
+      padding: 18px;
+    }
+  }
+</style>
+
+<section class="users-page">
+  <div class="users-container">
+
+    <h1 class="users-heading">
+      TM COSMETIC MANAGEMENT
+    </h1>
+
+    <h2><%= pageTitle %></h2>
+
+    <p class="users-description">
+      View and manage registered TM Cosmetic user accounts.
+    </p>
+
+    <div class="users-topbar">
+      <a href="/super-admin/dashboard" class="back-btn">
+        ← Back to Dashboard
+      </a>
+
+      <strong>
+        Total Records: <%= users.length %>
+      </strong>
+    </div>
+
+    <% if (queryUpdated) { %>
+      <div class="success-message">
+        User details updated successfully.
+      </div>
+    <% } %>
+
+    <% if (queryDeleted) { %>
+      <div class="success-message">
+        User deleted successfully.
+      </div>
+    <% } %>
+
+    <% if (permissionsUpdated) { %>
+      <div class="success-message">
+        User permissions saved successfully.
+      </div>
+    <% } %>
+
+    <div class="table-wrapper">
+      <table class="users-table">
+
+        <thead>
+          <tr>
+            <th>User ID</th>
+            <th>Name</th>
+            <th>Email Address</th>
+            <th>Phone Number</th>
+            <th>Account Role</th>
+            <th>Registration Date</th>
+            <th>Permissions</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          <% if (users.length > 0) { %>
+
+            <% users.forEach((item) => { %>
+
+              <%
+                const isProtected =
+                  Number(item.id) === 1 ||
+                  Number(item.role_id) === 1;
+              %>
+
+              <tr>
+
+                <td>
+                  <strong>#<%= item.id %></strong>
+                </td>
+
+                <td>
+                  <strong><%= item.name %></strong>
+                </td>
+
+                <td><%= item.email %></td>
+
+                <td><%= item.phone || '-' %></td>
+
+                <td>
+                  <span class="role-label">
+                    <%= item.role_name %>
+                  </span>
+                </td>
+
+                <td>
+                  <%= new Date(item.created_at).toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric'
+                  }) %>
+                </td>
+
+                <!-- PERMISSIONS -->
+                <td>
+
+                  <% if (isProtected) { %>
+
+                    <span class="protected-label">
+                      Full Access
+                    </span>
+
+                    <div class="permission-options">
+
+                      <label class="permission-check">
+                        <input type="checkbox" checked disabled>
+                        Read
+                      </label>
+
+                      <label class="permission-check">
+                        <input type="checkbox" checked disabled>
+                        Create
+                      </label>
+
+                      <label class="permission-check">
+                        <input type="checkbox" checked disabled>
+                        Edit
+                      </label>
+
+                      <label class="permission-check">
+                        <input type="checkbox" checked disabled>
+                        Delete
+                      </label>
+
+                    </div>
+
+                  <% } else { %>
+
+                    <form
+                      class="permission-form"
+                      method="POST"
+                      action="/super-admin/users/<%= item.id %>/permissions"
+                    >
+
+                      <input
+                        type="hidden"
+                        name="returnType"
+                        value="<%= typeof reqType !== 'undefined' ? reqType : 'all' %>"
+                      >
+
+                      <div class="permission-options">
+
+                        <label class="permission-check">
+                          <input
+                            type="checkbox"
+                            name="can_read"
+                            value="1"
+                            <%= Number(item.can_read) === 1 ? 'checked' : '' %>
+                          >
+                          Read
+                        </label>
+
+                        <label class="permission-check">
+                          <input
+                            type="checkbox"
+                            name="can_create"
+                            value="1"
+                            <%= Number(item.can_create) === 1 ? 'checked' : '' %>
+                          >
+                          Create
+                        </label>
+
+                        <label class="permission-check">
+                          <input
+                            type="checkbox"
+                            name="can_edit"
+                            value="1"
+                            <%= Number(item.can_edit) === 1 ? 'checked' : '' %>
+                          >
+                          Edit
+                        </label>
+
+                        <label class="permission-check">
+                          <input
+                            type="checkbox"
+                            name="can_delete"
+                            value="1"
+                            <%= Number(item.can_delete) === 1 ? 'checked' : '' %>
+                          >
+                          Delete
+                        </label>
+
+                      </div>
+
+                      <button
+                        type="submit"
+                        class="save-permission-btn"
+                      >
+                        Save Permissions
+                      </button>
+
+                    </form>
+
+                  <% } %>
+
+                </td>
+
+                <!-- ACTIONS -->
+                <td>
+
+                  <% if (isProtected) { %>
+
+                    <strong class="protected-label">
+                      Protected
+                    </strong>
+
+                  <% } else { %>
+
+                    <div class="user-actions">
+
+                      <a
+                        href="/super-admin/users/<%= item.id %>/edit"
+                        class="edit-btn"
+                      >
+                        Edit
+                      </a>
+
+                      <form
+                        method="POST"
+                        action="/super-admin/users/<%= item.id %>/delete"
+                        onsubmit="return confirm('Are you sure you want to delete this user?');"
+                      >
+
+                        <button
+                          type="submit"
+                          class="delete-btn"
+                        >
+                          Delete
+                        </button>
+
+                      </form>
+
+                    </div>
+
+                  <% } %>
+
+                </td>
+
+              </tr>
+
+            <% }); %>
+
+          <% } else { %>
+
+            <tr>
+              <td colspan="8" class="empty-message">
+                No users found.
+              </td>
+            </tr>
+
+          <% } %>
+
+        </tbody>
+
+      </table>
+    </div>
+
+    <p class="records-count">
+      Showing <%= users.length %> user(s)
+    </p>
+
+    <a href="/super-admin/dashboard" class="back-btn">
+      Back to Dashboard
+    </a>
+
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

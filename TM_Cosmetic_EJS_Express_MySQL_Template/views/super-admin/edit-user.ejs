@@ -1,0 +1,168 @@
+
+<%- include('../partials/header', { title }) %>
+
+<style>
+  .edit-user-page {
+    min-height: 650px;
+    padding: 40px 20px;
+    background: #fff5f6;
+  }
+
+  .edit-user-card {
+    max-width: 700px;
+    margin: auto;
+    padding: 35px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(80,40,45,.06);
+  }
+
+  .edit-user-card h1 {
+    color: #68474a;
+    margin-bottom: 10px;
+  }
+
+  .edit-user-card .intro {
+    color: #8b7779;
+    margin-bottom: 25px;
+  }
+
+  .edit-user-card label {
+    display: block;
+    margin: 17px 0 8px;
+    color: #68474a;
+    font-weight: 600;
+  }
+
+  .edit-user-card input,
+  .edit-user-card select {
+    width: 100%;
+    padding: 13px;
+    border: 1px solid #eadadd;
+    border-radius: 5px;
+    font-size: 14px;
+    box-sizing: border-box;
+  }
+
+  .edit-user-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 25px;
+  }
+
+  .edit-user-actions button,
+  .edit-user-actions a {
+    padding: 12px 22px;
+    border: 0;
+    border-radius: 5px;
+    background: #68474a;
+    color: #fff;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .edit-user-actions a {
+    background: #8b7779;
+  }
+
+  .edit-error {
+    padding: 12px;
+    margin-bottom: 20px;
+    background: #ffe6e6;
+    color: #a32626;
+    border-radius: 5px;
+  }
+</style>
+
+<section class="edit-user-page">
+
+  <div class="edit-user-card">
+
+    <span class="auth-eyebrow">TM COSMETIC MANAGEMENT</span>
+
+    <h1>Edit User</h1>
+
+    <p class="intro">
+      Update the registered user's account information.
+    </p>
+
+    <% if (error) { %>
+      <div class="edit-error">
+        <%= error %>
+      </div>
+    <% } %>
+
+    <form
+      action="/super-admin/users/<%= editUser.id %>/update"
+      method="POST"
+    >
+
+      <label>User ID</label>
+      <input type="text" value="<%= editUser.id %>" disabled>
+
+      <label>Full Name</label>
+      <input
+        type="text"
+        name="name"
+        value="<%= editUser.name || '' %>"
+        required
+        minlength="2"
+      >
+
+      <label>Email Address</label>
+      <input
+        type="email"
+        name="email"
+        value="<%= editUser.email || '' %>"
+        required
+      >
+
+      <label>Phone Number</label>
+      <input
+        type="text"
+        name="phone"
+        value="<%= editUser.phone || '' %>"
+      >
+
+      <label>Account Role</label>
+      <select name="role_id" required>
+
+        <option value="2" <%= Number(editUser.role_id) === 2 ? 'selected' : '' %>>
+          B2B User
+        </option>
+
+        <option value="3" <%= Number(editUser.role_id) === 3 ? 'selected' : '' %>>
+          B2C User
+        </option>
+
+        <option value="4" <%= Number(editUser.role_id) === 4 ? 'selected' : '' %>>
+          Delivery Person
+        </option>
+
+        <option value="5" <%= Number(editUser.role_id) === 5 ? 'selected' : '' %>>
+          Admin
+        </option>
+
+      </select>
+
+      <div class="edit-user-actions">
+
+        <button type="submit">
+          Update User
+        </button>
+
+        <a href="/super-admin/users/all">
+          Cancel
+        </a>
+
+      </div>
+
+    </form>
+
+  </div>
+
+</section>
+
+<%- include('../partials/footer') %>

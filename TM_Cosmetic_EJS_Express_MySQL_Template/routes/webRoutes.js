@@ -10,11 +10,15 @@ const auth = require('../controllers/authController');
 const cart = require('../controllers/cartController');
 const checkout = require('../controllers/checkoutController');
 const superAdmin = require('../controllers/superAdminController');
+const product = require('../controllers/productController');
 
 // ==========================================
 // IMPORT MIDDLEWARE
 // ==========================================
-const { requireSuperAdmin } = require('../middleware/roleMiddleware');
+const {
+  requireSuperAdmin,
+  requireProductManagement
+} = require('../middleware/roleMiddleware');
 
 // ==========================================
 // LOGIN MIDDLEWARE
@@ -61,9 +65,27 @@ const controllerFunctions = {
   'superAdmin.dashboard': superAdmin.dashboard,
   'superAdmin.staffList': superAdmin.staffList,
   'superAdmin.showCreateStaff': superAdmin.showCreateStaff,
-  'superAdmin.createStaff': superAdmin.createStaff
+  'superAdmin.createStaff': superAdmin.createStaff,
+  'superAdmin.usersList': superAdmin.usersList,
+  'superAdmin.showEditUser': superAdmin.showEditUser,
+  'superAdmin.updateUser': superAdmin.updateUser,
+  'superAdmin.updateUserPermissions': superAdmin.updateUserPermissions,
+  'superAdmin.deleteUser': superAdmin.deleteUser,
+
+  // Product Management
+  'product.productList': product.productList,
+  'product.showAddProduct': product.showAddProduct,
+  'product.addProduct': product.addProduct,
+  'product.showEditProduct': product.showEditProduct,
+  'product.updateProduct': product.updateProduct,
+  'product.deleteProduct': product.deleteProduct,
+  'product.updateStock': product.updateStock,
+  'product.uploadProductImage': product.uploadProductImage
 };
 
+// ==========================================
+// CHECK MISSING FUNCTIONS
+// ==========================================
 const missingFunctions = Object.entries(controllerFunctions)
   .filter(([name, fn]) => typeof fn !== 'function')
   .map(([name]) => name);
@@ -104,7 +126,7 @@ router.post('/signup', auth.signup);
 router.post('/logout', requireLogin, auth.logout);
 
 // ==========================================
-// PRODUCTS
+// PUBLIC PRODUCT BROWSING
 // ==========================================
 router.get('/products', store.products);
 router.get('/products/:id', store.productDetails);
@@ -129,7 +151,65 @@ router.post('/checkout', requireLogin, checkout.placeOrder);
 router.get('/order-success/:id', requireLogin, checkout.orderSuccess);
 
 // ==========================================
-// SUPER ADMIN ROUTES
+// PRODUCT MANAGEMENT
+// Super Admin, Admin and Delivery Person
+// ==========================================
+
+// View all products
+router.get(
+  '/manage-products',
+  requireProductManagement,
+  product.productList
+);
+
+// Show Add Product page
+router.get(
+  '/manage-products/add',
+  requireProductManagement,
+  product.showAddProduct
+);
+
+// Add Product
+// IMPORTANT: Multer must run before addProduct
+router.post(
+  '/manage-products/add',
+  requireProductManagement,
+  product.uploadProductImage,
+  product.addProduct
+);
+
+// Show Edit Product page
+router.get(
+  '/manage-products/:id/edit',
+  requireProductManagement,
+  product.showEditProduct
+);
+
+// Update Product
+// IMPORTANT: Multer must run before updateProduct
+router.post(
+  '/manage-products/:id/update',
+  requireProductManagement,
+  product.uploadProductImage,
+  product.updateProduct
+);
+
+// Delete Product
+router.post(
+  '/manage-products/:id/delete',
+  requireProductManagement,
+  product.deleteProduct
+);
+
+// Update Product Stock
+router.post(
+  '/manage-products/:id/stock',
+  requireProductManagement,
+  product.updateStock
+);
+
+// ==========================================
+// SUPER ADMIN DASHBOARD
 // ==========================================
 router.get(
   '/super-admin/dashboard',
@@ -137,22 +217,71 @@ router.get(
   superAdmin.dashboard
 );
 
+// ==========================================
+// SUPER ADMIN STAFF MANAGEMENT
+// ==========================================
+
+// Staff List
 router.get(
   '/super-admin/staff',
   requireSuperAdmin,
   superAdmin.staffList
 );
 
+// Show Create Staff Page
 router.get(
   '/super-admin/staff/create',
   requireSuperAdmin,
   superAdmin.showCreateStaff
 );
 
+// Create Staff
 router.post(
   '/super-admin/staff/create',
   requireSuperAdmin,
   superAdmin.createStaff
 );
 
+// ==========================================
+// SUPER ADMIN USER MANAGEMENT
+// ==========================================
+
+// View Users by Category
+router.get(
+  '/super-admin/users/:type',
+  requireSuperAdmin,
+  superAdmin.usersList
+);
+
+// Edit User Page
+router.get(
+  '/super-admin/users/:id/edit',
+  requireSuperAdmin,
+  superAdmin.showEditUser
+);
+
+// Update User
+router.post(
+  '/super-admin/users/:id/update',
+  requireSuperAdmin,
+  superAdmin.updateUser
+);
+
+// Update Individual User Permissions
+router.post(
+  '/super-admin/users/:id/permissions',
+  requireSuperAdmin,
+  superAdmin.updateUserPermissions
+);
+
+// Delete User
+router.post(
+  '/super-admin/users/:id/delete',
+  requireSuperAdmin,
+  superAdmin.deleteUser
+);
+
+// ==========================================
+// EXPORT ROUTER
+// ==========================================
 module.exports = router;

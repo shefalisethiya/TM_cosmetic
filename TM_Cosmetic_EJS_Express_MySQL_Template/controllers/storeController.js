@@ -21,12 +21,20 @@ const PRODUCT_SELECT = `
     COALESCE(s.discount, 0) AS discount,
     s.size,
     s.category AS category_name,
-    '${PLACEHOLDER_IMG}' AS image_url,
+
+    COALESCE(
+      NULLIF(s.product_image, ''),
+      '${PLACEHOLDER_IMG}'
+    ) AS image_url,
+
     COALESCE(s.stock, 0) AS stock
+
   FROM tm_cosmetics_stocks s
 `;
 
+// ===================================
 // STOCK STATUS
+// ===================================
 function withStockFlag(rows) {
   return rows.map(product => {
     const stock = Number(product.stock);
@@ -42,7 +50,9 @@ function withStockFlag(rows) {
   });
 }
 
+// ===================================
 // GET PRODUCTS FROM DATABASE
+// ===================================
 async function getProducts(filter = '') {
   let sql = PRODUCT_SELECT + `
     WHERE s.mrp IS NOT NULL
@@ -103,19 +113,19 @@ exports.products = async (req, res) => {
 
     const products = await getProducts(category);
 
-    // TEMPORARY STOCK DEBUGGING
-    console.log('========== PRODUCT STOCK CHECK ==========');
+    console.log('========== PRODUCT STOCK AND IMAGE CHECK ==========');
 
     console.table(
       products.map(p => ({
         id: p.id,
         name: p.name,
+        image_url: p.image_url,
         stock: p.stock,
         in_stock: p.in_stock
       }))
     );
 
-    console.log('==========================================');
+    console.log('===================================================');
 
     return res.render('products', {
       title: 'Shop Beauty | TM Cosmetic',
@@ -150,9 +160,10 @@ exports.productDetails = async (req, res) => {
 
     const product = withStockFlag(rows)[0];
 
-    console.log('PRODUCT DETAILS STOCK:', {
+    console.log('PRODUCT DETAILS:', {
       id: product.id,
       name: product.name,
+      image_url: product.image_url,
       stock: product.stock,
       in_stock: product.in_stock
     });
@@ -168,5 +179,7 @@ exports.productDetails = async (req, res) => {
   }
 };
 
+// ===================================
 // EXPORT
+// ===================================
 module.exports.PRODUCT_SELECT = PRODUCT_SELECT;

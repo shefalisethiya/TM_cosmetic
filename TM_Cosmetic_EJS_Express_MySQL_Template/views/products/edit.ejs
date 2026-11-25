@@ -1,0 +1,312 @@
+
+<%- include('../partials/header', { title }) %>
+
+<%
+  function formatDate(value) {
+    if (!value) return '';
+
+    if (value instanceof Date) {
+      const year = value.getUTCFullYear();
+      const month = String(value.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(value.getUTCDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    return String(value).split('T')[0].substring(0, 10);
+  }
+%>
+
+<style>
+  .edit-page {
+    min-height: 650px;
+    padding: 40px 20px;
+    background: #fff5f6;
+  }
+
+  .edit-container {
+    max-width: 1000px;
+    margin: auto;
+    padding: 35px;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 5px 25px rgba(0,0,0,.05);
+  }
+
+  .edit-heading {
+    margin-bottom: 25px;
+  }
+
+  .edit-heading h1 {
+    color: #743b50;
+    margin: 0 0 8px;
+  }
+
+  .edit-heading p {
+    color: #777;
+    margin: 0;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .form-group label {
+    margin-bottom: 7px;
+    color: #743b50;
+    font-weight: 600;
+  }
+
+  .form-group input {
+    width: 100%;
+    padding: 11px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    box-sizing: border-box;
+  }
+
+  .form-group input:focus {
+    outline: none;
+    border-color: #a64d70;
+  }
+
+  .full-width {
+    grid-column: 1 / -1;
+  }
+
+  .current-image {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    margin-bottom: 10px;
+  }
+
+  .no-image {
+    color: #999;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+
+  .error-message {
+    padding: 12px;
+    background: #ffe4e4;
+    color: #b42323;
+    border-radius: 6px;
+    margin-bottom: 20px;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 25px;
+    flex-wrap: wrap;
+  }
+
+  .update-btn,
+  .back-btn {
+    padding: 11px 20px;
+    border-radius: 6px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .update-btn {
+    background: #a64d70;
+    color: white;
+  }
+
+  .back-btn {
+    background: #eee;
+    color: #444;
+  }
+
+  @media(max-width: 650px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .edit-container {
+      padding: 20px;
+    }
+
+    .full-width {
+      grid-column: auto;
+    }
+  }
+</style>
+
+<section class="edit-page">
+  <div class="edit-container">
+
+    <div class="edit-heading">
+      <h1>Edit Product</h1>
+      <p>Update the product information below.</p>
+    </div>
+
+    <% if (error) { %>
+      <div class="error-message">
+        <%= error %>
+      </div>
+    <% } %>
+
+    <form
+      action="/manage-products/<%= product.id %>/update"
+      method="POST"
+      enctype="multipart/form-data"
+    >
+
+      <div class="form-grid">
+
+        <div class="form-group">
+          <label>Product Name *</label>
+          <input
+            type="text"
+            name="product_name"
+            value="<%= product.product_name || '' %>"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label>Brand Name</label>
+          <input
+            type="text"
+            name="brand_name"
+            value="<%= product.brand_name || '' %>"
+          >
+        </div>
+
+        <div class="form-group">
+          <label>Category</label>
+          <input
+            type="text"
+            name="category"
+            value="<%= product.category || '' %>"
+          >
+        </div>
+
+        <div class="form-group">
+          <label>Sub Category</label>
+          <input
+            type="text"
+            name="sub_category"
+            value="<%= product.sub_category || '' %>"
+          >
+        </div>
+
+        <div class="form-group">
+          <label>Size</label>
+          <input
+            type="text"
+            name="size"
+            value="<%= product.size || '' %>"
+          >
+        </div>
+
+        <div class="form-group">
+          <label>MRP (₹) *</label>
+          <input
+            type="number"
+            name="mrp"
+            value="<%= product.mrp ?? '' %>"
+            min="0"
+            step="0.01"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label>Discount (%)</label>
+          <input
+            type="number"
+            name="discount"
+            value="<%= product.discount ?? 0 %>"
+            min="0"
+            max="100"
+            step="0.01"
+          >
+        </div>
+
+        <div class="form-group">
+          <label>Stock *</label>
+          <input
+            type="number"
+            name="stock"
+            value="<%= product.stock ?? 0 %>"
+            min="0"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label>Manufacturing Date</label>
+          <input
+            type="date"
+            name="mfg_date"
+            value="<%= formatDate(product.mfg_date) %>"
+          >
+        </div>
+
+        <div class="form-group">
+          <label>Expiry Date</label>
+          <input
+            type="date"
+            name="expiry_date"
+            value="<%= formatDate(product.expiry_date) %>"
+          >
+        </div>
+
+        <div class="form-group full-width">
+          <label>Current Product Image</label>
+
+          <% if (product.product_image) { %>
+            <img
+              src="<%= product.product_image %>"
+              alt="Current Product Image"
+              class="current-image"
+            >
+          <% } else { %>
+            <span class="no-image">No image uploaded.</span>
+          <% } %>
+        </div>
+
+        <div class="form-group full-width">
+          <label>Upload New Product Image (Optional)</label>
+          <input
+            type="file"
+            name="product_image"
+            accept=".jpg,.jpeg,.png,.webp"
+          >
+        </div>
+
+      </div>
+
+      <div class="form-actions">
+
+        <button type="submit" class="update-btn">
+          Update Product
+        </button>
+
+        <a href="/manage-products" class="back-btn">
+          Back to Product List
+        </a>
+
+      </div>
+
+    </form>
+
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

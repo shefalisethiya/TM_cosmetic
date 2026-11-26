@@ -10,9 +10,23 @@
     const value = String(status || '').toLowerCase();
 
     if (value === 'delivered') return 'success';
-    if (value === 'rejected' || value === 'returned' || value === 'cancelled') return 'danger';
-    if (value === 'pending payment') return 'warning';
-    return 'primary';
+    if (value === 'rejected' || value === 'returned') return 'danger';
+    if (value === 'out for delivery') return 'info';
+    if (value === 'accepted') return 'primary';
+    if (value === 'assigned') return 'warning';
+    return 'secondary';
+  };
+
+  const getNextStatuses = (status) => {
+    const value = String(status || '').toLowerCase();
+
+    if (value === 'assigned') return ['Accepted', 'Rejected'];
+    if (value === 'accepted') return ['Out for Delivery', 'Rejected'];
+    if (value === 'out for delivery') {
+      return ['Delivered', 'Rejected', 'Returned'];
+    }
+
+    return [];
   };
 %>
 
@@ -21,7 +35,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= title || 'My Dashboard | TM Cosmetic' %></title>
+
+  <title><%= title || 'Delivery Dashboard | TM Cosmetic' %></title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
@@ -67,11 +82,39 @@
       padding: 30px;
     }
 
-    .stat-card {
+    .stat-card,
+    .section-card {
       border: none;
       border-radius: 14px;
       box-shadow: 0 3px 15px rgba(0,0,0,.04);
+    }
+
+    .stat-card {
       height: 100%;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 7px 20px rgba(0,0,0,.10);
+    }
+
+    .stat-link {
+      display: block;
+      height: 100%;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .stat-link:hover {
+      color: inherit;
+    }
+
+    .stat-link:focus-visible {
+      outline: 3px solid #68468a;
+      outline-offset: 3px;
+      border-radius: 14px;
     }
 
     .stat-icon {
@@ -86,15 +129,12 @@
       font-size: 22px;
     }
 
-    .section-card {
-      border: none;
-      border-radius: 14px;
-      box-shadow: 0 3px 15px rgba(0,0,0,.04);
-    }
-
-    .order-item {
-      font-size: 13px;
-      color: #777;
+    .order-card {
+      border: 1px solid #e9e5ef;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 18px;
+      background: #fff;
     }
 
     .product-image {
@@ -103,12 +143,33 @@
       object-fit: contain;
       background: #f7f7f7;
       border-radius: 7px;
-      margin-right: 8px;
+      margin-right: 10px;
+    }
+
+    .order-item {
+      font-size: 13px;
+      color: #777;
     }
 
     .badge {
       padding: 7px 10px;
       font-weight: 500;
+    }
+
+    .customer-details {
+      background: #faf9fc;
+      border-radius: 10px;
+      padding: 15px;
+    }
+
+    .update-form {
+      background: #faf9fc;
+      border-radius: 10px;
+      padding: 15px;
+    }
+
+    .filter-info {
+      display: none;
     }
 
     @media (max-width: 767px) {
@@ -130,207 +191,490 @@
 
     <!-- SIDEBAR -->
     <aside class="col-md-3 col-lg-2 sidebar">
+
       <div class="brand">TM COSMETIC</div>
 
       <div class="text-center mb-4">
         <i class="bi bi-person-circle fs-1"></i>
-        <h6 class="mt-2 mb-0"><%= customer.name %></h6>
-        <small class="text-white-50">B2C Customer</small>
+
+        <h6 class="mt-2 mb-0">
+          <%= deliveryPerson ? deliveryPerson.name : 'Delivery Person' %>
+        </h6>
+
+        <small class="text-white-50">Delivery Person</small>
       </div>
 
-      <a href="/b2c/dashboard" class="active">
-        <i class="bi bi-speedometer2 me-2"></i> Dashboard
+      <a href="/delivery/dashboard" class="active">
+        <i class="bi bi-speedometer2 me-2"></i>
+        Dashboard
       </a>
 
-      <a href="/products">
-        <i class="bi bi-shop me-2"></i> Continue Shopping
-      </a>
-
-      <a href="/cart">
-        <i class="bi bi-cart3 me-2"></i> My Cart
-      </a>
-
-      <a href="/b2c/orders">
-        <i class="bi bi-box-seam me-2"></i> My Orders
-      </a>
-
-      <a href="/b2c/profile">
-        <i class="bi bi-person me-2"></i> My Profile
+      <a href="#assigned-orders" onclick="filterOrders('all')">
+        <i class="bi bi-box-seam me-2"></i>
+        Assigned Orders
       </a>
 
       <a href="/logout">
-        <i class="bi bi-box-arrow-right me-2"></i> Logout
+        <i class="bi bi-box-arrow-right me-2"></i>
+        Logout
       </a>
+
     </aside>
 
     <!-- MAIN CONTENT -->
     <main class="col-md-9 col-lg-10 main-content">
 
+      <!-- HEADER -->
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+
         <div>
-          <h3 class="fw-bold mb-1">Welcome, <%= customer.name %>!</h3>
-          <p class="text-secondary mb-0">Your personal shopping dashboard</p>
+          <h3 class="fw-bold mb-1">
+            Welcome, <%= deliveryPerson ? deliveryPerson.name : 'Delivery Person' %>!
+          </h3>
+
+          <p class="text-secondary mb-0">
+            Manage your assigned deliveries here.
+          </p>
         </div>
 
-        <a href="/products" class="btn btn-dark">
-          <i class="bi bi-bag me-2"></i> Shop Now
+        <a href="/delivery/dashboard" class="btn btn-dark">
+          <i class="bi bi-arrow-clockwise me-2"></i>
+          Refresh
         </a>
+
       </div>
 
       <!-- STATISTICS -->
       <div class="row g-3 mb-4">
 
+        <!-- TOTAL ORDERS -->
         <div class="col-6 col-xl-3">
-          <div class="card stat-card p-3">
-            <div class="stat-icon mb-3">
-              <i class="bi bi-bag-check"></i>
+          <a href="#assigned-orders"
+             class="stat-link"
+             onclick="filterOrders('all')">
+
+            <div class="card stat-card p-3">
+              <div class="stat-icon mb-3">
+                <i class="bi bi-box-seam"></i>
+              </div>
+
+              <h3 class="fw-bold">
+                <%= stats.total_orders || 0 %>
+              </h3>
+
+              <p class="text-secondary mb-0">
+                Total Assigned Orders
+              </p>
             </div>
-            <h3 class="fw-bold"><%= stats.total_orders || 0 %></h3>
-            <p class="text-secondary mb-0">Total Orders</p>
-          </div>
+
+          </a>
         </div>
 
+        <!-- ASSIGNED ORDERS -->
         <div class="col-6 col-xl-3">
-          <div class="card stat-card p-3">
-            <div class="stat-icon mb-3">
-              <i class="bi bi-truck"></i>
+          <a href="#assigned-orders"
+             class="stat-link"
+             onclick="filterOrders('assigned')">
+
+            <div class="card stat-card p-3">
+              <div class="stat-icon mb-3">
+                <i class="bi bi-clock-history"></i>
+              </div>
+
+              <h3 class="fw-bold">
+                <%= stats.assigned_orders || 0 %>
+              </h3>
+
+              <p class="text-secondary mb-0">
+                New Assignments
+              </p>
             </div>
-            <h3 class="fw-bold"><%= stats.active_orders || 0 %></h3>
-            <p class="text-secondary mb-0">Active Orders</p>
-          </div>
+
+          </a>
         </div>
 
+        <!-- IN PROGRESS -->
         <div class="col-6 col-xl-3">
-          <div class="card stat-card p-3">
-            <div class="stat-icon mb-3">
-              <i class="bi bi-check-circle"></i>
+          <a href="#assigned-orders"
+             class="stat-link"
+             onclick="filterOrders('progress')">
+
+            <div class="card stat-card p-3">
+              <div class="stat-icon mb-3">
+                <i class="bi bi-truck"></i>
+              </div>
+
+              <h3 class="fw-bold">
+                <%= (stats.accepted_orders || 0) + (stats.out_for_delivery_orders || 0) %>
+              </h3>
+
+              <p class="text-secondary mb-0">
+                In Progress
+              </p>
             </div>
-            <h3 class="fw-bold"><%= stats.delivered_orders || 0 %></h3>
-            <p class="text-secondary mb-0">Delivered Orders</p>
-          </div>
+
+          </a>
         </div>
 
+        <!-- DELIVERED ORDERS -->
         <div class="col-6 col-xl-3">
-          <div class="card stat-card p-3">
-            <div class="stat-icon mb-3">
-              <i class="bi bi-person"></i>
+          <a href="#assigned-orders"
+             class="stat-link"
+             onclick="filterOrders('delivered')">
+
+            <div class="card stat-card p-3">
+              <div class="stat-icon mb-3">
+                <i class="bi bi-check-circle"></i>
+              </div>
+
+              <h3 class="fw-bold">
+                <%= stats.delivered_orders || 0 %>
+              </h3>
+
+              <p class="text-secondary mb-0">
+                Delivered Orders
+              </p>
             </div>
-            <h6 class="fw-bold mt-2">My Account</h6>
-            <p class="text-secondary mb-0">Customer Profile</p>
-          </div>
+
+          </a>
         </div>
 
       </div>
 
-      <!-- CUSTOMER PROFILE -->
+      <!-- DELIVERY PROFILE -->
       <div class="card section-card p-4 mb-4">
-        <h5 class="fw-bold mb-3">My Profile</h5>
+
+        <h5 class="fw-bold mb-3">
+          <i class="bi bi-person-circle me-2"></i>
+          My Profile
+        </h5>
 
         <div class="row">
+
           <div class="col-md-4 mb-3">
             <small class="text-secondary">Full Name</small>
-            <div class="fw-semibold"><%= customer.name %></div>
+            <div class="fw-semibold">
+              <%= deliveryPerson ? deliveryPerson.name : 'N/A' %>
+            </div>
           </div>
 
           <div class="col-md-4 mb-3">
             <small class="text-secondary">Email Address</small>
-            <div class="fw-semibold"><%= customer.email %></div>
+            <div class="fw-semibold">
+              <%= deliveryPerson ? (deliveryPerson.email || 'Not provided') : 'N/A' %>
+            </div>
           </div>
 
           <div class="col-md-4 mb-3">
             <small class="text-secondary">Mobile Number</small>
-            <div class="fw-semibold"><%= customer.phone || 'Not provided' %></div>
+            <div class="fw-semibold">
+              <%= deliveryPerson ? (deliveryPerson.phone || 'Not provided') : 'N/A' %>
+            </div>
           </div>
+
         </div>
       </div>
 
-      <!-- RECENT ORDERS -->
-      <div class="card section-card p-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="fw-bold mb-0">Recent Orders</h5>
-          <a href="/b2c/orders" class="text-decoration-none">View All</a>
+      <!-- ASSIGNED ORDERS -->
+      <div class="card section-card p-4" id="assigned-orders">
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+
+          <h5 class="fw-bold mb-0">
+            <i class="bi bi-box-seam me-2"></i>
+            My Assigned Orders
+          </h5>
+
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge text-bg-dark" id="visible-order-count">
+              <%= orders ? orders.length : 0 %> Orders
+            </span>
+
+            <button type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    onclick="filterOrders('all')">
+              Show All
+            </button>
+          </div>
+
+        </div>
+
+        <div class="filter-info alert alert-light border py-2" id="filter-info">
+          Showing: <strong id="filter-label">All Orders</strong>
         </div>
 
         <% if (orders && orders.length > 0) { %>
 
           <% orders.forEach(order => { %>
 
-            <div class="border rounded-3 p-3 mb-3">
+            <%
+              const currentStatus = String(order.order_status || '').toLowerCase();
+              const nextStatuses = getNextStatuses(order.order_status);
+              const orderId = order.id || order.order_id;
+            %>
 
-              <div class="d-flex justify-content-between flex-wrap gap-2 mb-3">
+            <div class="order-card"
+                 data-status="<%= order.order_status || 'Assigned' %>">
+
+              <!-- ORDER HEADER -->
+              <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+
                 <div>
-                  <strong>Order #<%= order.order_id %></strong>
-                  <div class="text-secondary small">
-                    <%= new Date(order.created_at).toLocaleDateString('en-IN') %>
-                  </div>
+                  <h6 class="fw-bold mb-1">
+                    Order #<%= orderId %>
+                  </h6>
+
+                  <small class="text-secondary">
+                    <i class="bi bi-calendar3 me-1"></i>
+
+                    <%= order.created_at
+                      ? new Date(order.created_at).toLocaleString('en-IN')
+                      : 'Date not available' %>
+                  </small>
                 </div>
 
                 <span class="badge text-bg-<%= statusClass(order.order_status) %>">
-                  <%= order.order_status %>
+                  <%= order.order_status || 'Assigned' %>
                 </span>
+
               </div>
+
+              <!-- CUSTOMER DETAILS -->
+              <div class="customer-details mb-3">
+
+                <h6 class="fw-bold mb-3">
+                  <i class="bi bi-person me-2"></i>
+                  Customer Details
+                </h6>
+
+                <div class="row">
+
+                  <div class="col-md-6 mb-2">
+                    <small class="text-secondary">Customer Name</small>
+                    <div class="fw-semibold">
+                      <%= order.customer_name || 'N/A' %>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6 mb-2">
+                    <small class="text-secondary">Mobile Number</small>
+                    <div class="fw-semibold">
+                      <%= order.mobile || 'N/A' %>
+                    </div>
+                  </div>
+
+                  <div class="col-12 mt-2">
+                    <small class="text-secondary">Delivery Address</small>
+                    <div class="fw-semibold">
+                      <%= order.address || 'N/A' %>,
+                      <%= order.city || '' %>
+                      <%= order.pincode || '' %>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- ORDER ITEMS -->
+              <h6 class="fw-bold mb-3">
+                <i class="bi bi-bag me-2"></i>
+                Order Items
+              </h6>
 
               <% if (order.items && order.items.length > 0) { %>
 
                 <% order.items.forEach(item => { %>
-                  <div class="d-flex align-items-center mb-2">
+
+                  <div class="d-flex align-items-center mb-3">
 
                     <% if (item.product_image) { %>
                       <img
                         src="<%= item.product_image %>"
                         class="product-image"
-                        alt="<%= item.product_name %>"
+                        alt="<%= item.product_name || 'Product' %>"
                         onerror="this.style.display='none'"
                       >
                     <% } %>
 
                     <div class="flex-grow-1">
-                      <div class="fw-semibold"><%= item.product_name %></div>
+                      <div class="fw-semibold">
+                        <%= item.product_name || 'Product' %>
+                      </div>
+
                       <div class="order-item">
-                        Quantity: <%= item.quantity %>
+                        Quantity: <%= item.quantity || 0 %>
                         × <%= formatCurrency(item.price) %>
                       </div>
                     </div>
 
-                    <strong><%= formatCurrency(item.line_total) %></strong>
+                    <strong>
+                      <%= formatCurrency(item.line_total) %>
+                    </strong>
 
                   </div>
+
                 <% }) %>
 
               <% } else { %>
-                <p class="text-secondary small">Product details unavailable.</p>
+
+                <p class="text-secondary small">
+                  Product details unavailable.
+                </p>
+
               <% } %>
 
               <hr>
 
-              <div class="d-flex justify-content-between flex-wrap gap-2">
-                <div>
-                  <small class="text-secondary">Payment</small>
+              <!-- PAYMENT AND TOTAL -->
+              <div class="row align-items-center mb-3">
+
+                <div class="col-md-6 mb-2">
+                  <small class="text-secondary">Payment Method</small>
+
                   <div class="fw-semibold">
                     <%= order.payment_method || 'N/A' %>
-                    (<%= order.payment_status || 'N/A' %>)
                   </div>
+
+                  <small class="text-secondary">
+                    Payment Status:
+                    <%= order.payment_status || 'N/A' %>
+                  </small>
                 </div>
 
-                <div class="text-end">
+                <div class="col-md-6 text-md-end">
                   <small class="text-secondary">Order Total</small>
+
                   <div class="fw-bold fs-5">
                     <%= formatCurrency(order.total_amount) %>
                   </div>
                 </div>
+
               </div>
+
+              <!-- PREVIOUS DELIVERY REASON -->
+              <% if (order.delivery_status_reason) { %>
+
+                <div class="alert alert-warning py-2">
+                  <strong>Previous Status Reason:</strong>
+                  <%= order.delivery_status_reason %>
+                </div>
+
+              <% } %>
+
+              <!-- UPDATE DELIVERY STATUS -->
+              <% if (nextStatuses.length > 0) { %>
+
+                <div class="update-form">
+
+                  <h6 class="fw-bold mb-3">
+                    <i class="bi bi-arrow-repeat me-2"></i>
+                    Update Delivery Status
+                  </h6>
+
+                  <form
+                    action="/delivery/orders/<%= orderId %>/status"
+                    method="POST"
+                    class="status-update-form"
+                  >
+
+                    <div class="row align-items-end">
+
+                      <div class="col-md-5 mb-3">
+                        <label class="form-label fw-semibold">
+                          New Status
+                        </label>
+
+                        <select
+                          name="status"
+                          class="form-select status-select"
+                          required
+                        >
+                          <option value="">Select Status</option>
+
+                          <% nextStatuses.forEach(status => { %>
+                            <option value="<%= status %>">
+                              <%= status %>
+                            </option>
+                          <% }) %>
+
+                        </select>
+                      </div>
+
+                      <div class="col-md-5 mb-3 reason-wrapper d-none">
+
+                        <label class="form-label fw-semibold">
+                          Reason for Rejection / Return
+                        </label>
+
+                        <textarea
+                          name="reason"
+                          class="form-control reason-input"
+                          rows="2"
+                          maxlength="255"
+                          placeholder="Enter reason"
+                        ></textarea>
+
+                      </div>
+
+                      <div class="col-md-2 mb-3">
+                        <button type="submit" class="btn btn-dark w-100">
+                          <i class="bi bi-check2-circle me-1"></i>
+                          Update
+                        </button>
+                      </div>
+
+                    </div>
+
+                  </form>
+
+                </div>
+
+              <% } else { %>
+
+                <div class="alert alert-light border mb-0">
+
+                  <i class="bi bi-info-circle me-2"></i>
+
+                  <% if (currentStatus === 'delivered') { %>
+                    This order has been successfully delivered.
+                  <% } else if (currentStatus === 'rejected' || currentStatus === 'returned') { %>
+                    This order is marked as <%= order.order_status %>.
+                  <% } else { %>
+                    No further status updates are available.
+                  <% } %>
+
+                </div>
+
+              <% } %>
 
             </div>
 
           <% }) %>
 
+          <div class="text-center py-3 d-none" id="no-filter-results">
+            <i class="bi bi-search fs-2 text-secondary"></i>
+            <h6 class="mt-2">No matching orders</h6>
+            <p class="text-secondary mb-0">
+              There are no orders in this category.
+            </p>
+          </div>
+
         <% } else { %>
 
           <div class="text-center py-5">
-            <i class="bi bi-bag-x fs-1 text-secondary"></i>
-            <h6 class="mt-3">No Orders Yet</h6>
-            <p class="text-secondary">Start shopping and your orders will appear here.</p>
-            <a href="/products" class="btn btn-dark">Explore Products</a>
+
+            <i class="bi bi-truck fs-1 text-secondary"></i>
+
+            <h6 class="mt-3">No Assigned Orders</h6>
+
+            <p class="text-secondary">
+              You don't have any delivery orders assigned yet.
+            </p>
+
+            <a href="/delivery/dashboard" class="btn btn-dark">
+              Refresh Dashboard
+            </a>
+
           </div>
 
         <% } %>
@@ -342,10 +686,118 @@
       </p>
 
     </main>
+
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  // ==========================================
+  // DASHBOARD CARD FILTERS
+  // ==========================================
+
+  function filterOrders(filter) {
+
+    const cards = document.querySelectorAll('.order-card');
+    const filterInfo = document.getElementById('filter-info');
+    const filterLabel = document.getElementById('filter-label');
+    const countElement = document.getElementById('visible-order-count');
+    const noResults = document.getElementById('no-filter-results');
+
+    const labels = {
+      all: 'All Orders',
+      assigned: 'New Assignments',
+      progress: 'In Progress',
+      delivered: 'Delivered Orders'
+    };
+
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+
+      const status = (card.dataset.status || '').toLowerCase();
+
+      let show = false;
+
+      if (filter === 'all') {
+        show = true;
+      } else if (filter === 'assigned') {
+        show = status === 'assigned';
+      } else if (filter === 'progress') {
+        show = status === 'accepted' ||
+               status === 'out for delivery';
+      } else if (filter === 'delivered') {
+        show = status === 'delivered';
+      }
+
+      card.style.display = show ? '' : 'none';
+
+      if (show) {
+        visibleCount++;
+      }
+
+    });
+
+    if (filterInfo) {
+      filterInfo.style.display = 'block';
+    }
+
+    if (filterLabel) {
+      filterLabel.textContent = labels[filter] || 'All Orders';
+    }
+
+    if (countElement) {
+      countElement.textContent = visibleCount + ' Orders';
+    }
+
+    if (noResults) {
+      noResults.classList.toggle('d-none', visibleCount !== 0);
+    }
+  }
+
+  // ==========================================
+  // DELIVERY STATUS UPDATE FORM
+  // ==========================================
+
+  document.querySelectorAll('.status-update-form').forEach(form => {
+
+    const statusSelect = form.querySelector('.status-select');
+    const reasonWrapper = form.querySelector('.reason-wrapper');
+    const reasonInput = form.querySelector('.reason-input');
+
+    const updateReasonField = () => {
+
+      const selectedStatus = statusSelect.value.toLowerCase();
+
+      const requiresReason =
+        selectedStatus === 'rejected' ||
+        selectedStatus === 'returned';
+
+      reasonWrapper.classList.toggle('d-none', !requiresReason);
+
+      reasonInput.required = requiresReason;
+    };
+
+    statusSelect.addEventListener('change', updateReasonField);
+
+    form.addEventListener('submit', event => {
+
+      updateReasonField();
+
+      if (reasonInput.required && !reasonInput.value.trim()) {
+
+        event.preventDefault();
+
+        reasonInput.focus();
+
+        alert('Please enter a reason for rejection or return.');
+      }
+
+    });
+
+  });
+</script>
 
 </body>
 </html>

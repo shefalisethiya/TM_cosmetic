@@ -33,8 +33,10 @@ exports.requireRole = (...allowedRoles) => {
   };
 };
 
+// ==========================================
 // SUPER ADMIN
 // Only User ID 1 with role_id 1
+// ==========================================
 exports.requireSuperAdmin = (req, res, next) => {
   if (!req.session || !req.session.user) {
     return res.redirect('/login');
@@ -53,25 +55,34 @@ exports.requireSuperAdmin = (req, res, next) => {
   next();
 };
 
+// ==========================================
 // ADMIN + SUPER ADMIN
+// ==========================================
 exports.requireAdmin = (req, res, next) => {
   return exports.requireRole(1, 5)(req, res, next);
 };
 
+// ==========================================
 // DELIVERY PERSON
+// ==========================================
 exports.requireDelivery = (req, res, next) => {
   return exports.requireRole(4)(req, res, next);
 };
 
+// ==========================================
 // B2B USER
+// ==========================================
 exports.requireB2B = (req, res, next) => {
   return exports.requireRole(2)(req, res, next);
 };
 
+// ==========================================
 // B2C USER
+// ==========================================
 exports.requireB2C = (req, res, next) => {
   return exports.requireRole(3)(req, res, next);
 };
+
 // ==========================================
 // PRODUCT CRUD PERMISSION
 // Super Admin, Admin and Delivery Person

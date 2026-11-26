@@ -60,7 +60,14 @@ app.use(async (req, res, next) => {
   next();
 });
 
+// Serve public files
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve uploaded product images
+app.use(
+  '/uploads',
+  express.static(path.join(__dirname, 'uploads'))
+);
 
 // Website routes
 app.use('/', webRoutes);

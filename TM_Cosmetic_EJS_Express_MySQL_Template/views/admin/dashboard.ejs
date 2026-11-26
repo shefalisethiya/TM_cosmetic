@@ -1,0 +1,33 @@
+
+<%- include('../partials/header', { title }) %>
+
+<div class="container" style="padding:40px 20px;">
+  <h1>TM Cosmetic Admin Dashboard</h1>
+
+  <p>Welcome, <%= user.name %>!</p>
+
+  <hr>
+
+  <h3>Admin Management</h3>
+
+  <ul>
+    <li>
+      <a href="/manage-products">Manage Products</a>
+    </li>
+    <h3>Admin Management</h3>
+
+<ul>
+    <li>
+        <a href="/manage-products">Product Management</a>
+    </li>
+    <li>
+        <a href="/admin/orders">Order List</a>
+    </li>
+    <li>
+        <a href="/admin/orders">Assign Delivery</a>
+    </li>
+</ul>
+  </ul>
+</div>
+
+<%- include('../partials/footer') %>

@@ -4,14 +4,56 @@ const bcrypt = require('bcryptjs');
 const db = require('../config/db');
 
 // ==========================================
+// EMAIL VALIDATION
+// ==========================================
+const isValidEmail = (email) => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
+
+// ==========================================
+// ROLE-BASED REDIRECT
+// ==========================================
+const redirectByRole = (user, res) => {
+  const roleId = Number(user.role_id);
+  const userId = Number(user.id);
+
+  // Super Admin
+  if (userId === 1 && roleId === 1) {
+    return res.redirect('/super-admin/dashboard');
+  }
+
+  // Admin
+  if (roleId === 5) {
+    return res.redirect('/admin/dashboard');
+  }
+
+  // B2B Customer
+  if (roleId === 2) {
+    return res.redirect('/b2b/dashboard');
+  }
+
+  // B2C Customer
+  if (roleId === 3) {
+    return res.redirect('/b2c/dashboard');
+  }
+
+  // Delivery Person
+  if (roleId === 4) {
+    return res.redirect('/delivery/dashboard');
+  }
+
+  return res.redirect('/');
+};
+
+// ==========================================
 // SHOW LOGIN PAGE
 // ==========================================
 exports.showLogin = (req, res) => {
   if (req.session.user) {
-    return res.redirect('/');
+    return redirectByRole(req.session.user, res);
   }
 
-  res.render('auth/login', {
+  return res.render('auth/login', {
     title: 'Sign In | TM Cosmetic',
     error: null,
     email: ''
@@ -23,10 +65,10 @@ exports.showLogin = (req, res) => {
 // ==========================================
 exports.showSignup = (req, res) => {
   if (req.session.user) {
-    return res.redirect('/');
+    return redirectByRole(req.session.user, res);
   }
 
-  res.render('auth/signup', {
+  return res.render('auth/signup', {
     title: 'Create Account | TM Cosmetic',
     error: null,
     name: '',
@@ -47,7 +89,7 @@ exports.signup = async (req, res) => {
   const confirmPassword = String(req.body.confirmPassword || '');
   const joinas = Number(req.body.joinas);
 
-  const renderError = message => {
+  const renderError = (message) => {
     return res.status(400).render('auth/signup', {
       title: 'Create Account | TM Cosmetic',
       error: message,
@@ -62,7 +104,7 @@ exports.signup = async (req, res) => {
     return renderError('Please enter your full name.');
   }
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (!isValidEmail(email)) {
     return renderError('Please enter a valid email address.');
   }
 
@@ -74,7 +116,6 @@ exports.signup = async (req, res) => {
     return renderError('Passwords do not match.');
   }
 
-  // Public signup is restricted to B2B and B2C
   if (![2, 3].includes(joinas)) {
     return renderError('Please select B2B User or B2C User.');
   }
@@ -100,7 +141,6 @@ exports.signup = async (req, res) => {
       [name, email, phone || null, passwordHash, joinas, joinas]
     );
 
-    // After registration, redirect the customer to login.
     return res.redirect('/login');
 
   } catch (error) {
@@ -130,7 +170,7 @@ exports.loginWithOTP = async (req, res) => {
   const email = String(req.body.email || '').trim().toLowerCase();
   const password = String(req.body.password || '');
 
-  const renderError = message => {
+  const renderError = (message) => {
     return res.status(400).render('auth/login', {
       title: 'Sign In | TM Cosmetic',
       error: message,
@@ -142,13 +182,19 @@ exports.loginWithOTP = async (req, res) => {
     return renderError('Enter your email and password.');
   }
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (!isValidEmail(email)) {
     return renderError('Please enter a valid email address.');
   }
 
   try {
     const [rows] = await db.execute(
-      `SELECT id, name, email, phone, password_hash, role_id
+      `SELECT
+         id,
+         name,
+         email,
+         phone,
+         password_hash,
+         role_id
        FROM users
        WHERE email = ?
        LIMIT 1`,
@@ -177,7 +223,7 @@ exports.loginWithOTP = async (req, res) => {
       );
     }
 
-    // Generate a random 4-digit OTP
+    // Generate random 4-digit OTP
     const otp = String(crypto.randomInt(1000, 10000));
     const otpHash = await bcrypt.hash(otp, 10);
 
@@ -199,13 +245,13 @@ exports.loginWithOTP = async (req, res) => {
 
     req.session.pendingLoginUserId = user.id;
 
-    // Development only: OTP is logged in the terminal.
+    // Development only: OTP logged in terminal
     // Actual SMS delivery requires an SMS provider.
     if (process.env.NODE_ENV !== 'production') {
       console.log('TM COSMETIC DEVELOPMENT OTP:', otp);
     }
 
-    return req.session.save(err => {
+    return req.session.save((err) => {
       if (err) {
         console.error('Session save error:', err.message);
         return renderError('Unable to start login. Please try again.');
@@ -243,7 +289,7 @@ exports.showVerifyOTP = (req, res) => {
     message = 'Unable to resend OTP. Please try again.';
   }
 
-  res.render('auth/verify-otp', {
+  return res.render('auth/verify-otp', {
     title: 'Verify OTP | TM Cosmetic',
     error: null,
     message
@@ -257,7 +303,7 @@ exports.verifyOTP = async (req, res) => {
   const userId = req.session.pendingLoginUserId;
   const otp = String(req.body.otp || '').trim();
 
-  const renderError = message => {
+  const renderError = (message) => {
     return res.status(400).render('auth/verify-otp', {
       title: 'Verify OTP | TM Cosmetic',
       error: message,
@@ -275,8 +321,11 @@ exports.verifyOTP = async (req, res) => {
 
   try {
     const [otpRows] = await db.execute(
-      `SELECT id, otp_hash, attempts,
-              (expires_at > NOW()) AS is_valid_time
+      `SELECT
+         id,
+         otp_hash,
+         attempts,
+         (expires_at > NOW()) AS is_valid_time
        FROM login_otps
        WHERE user_id = ?
        LIMIT 1`,
@@ -348,9 +397,10 @@ exports.verifyOTP = async (req, res) => {
     );
 
     // Regenerate session to prevent session fixation
-    req.session.regenerate(err => {
+    return req.session.regenerate((err) => {
       if (err) {
         console.error('Session regeneration error:', err.message);
+
         return res.status(500).send(
           'Unable to complete login. Please try again.'
         );
@@ -363,27 +413,20 @@ exports.verifyOTP = async (req, res) => {
         role_id: Number(user.role_id)
       };
 
-      return req.session.save(err => {
+      return req.session.save((err) => {
         if (err) {
           console.error('Session save error:', err.message);
           return res.status(500).send('Unable to complete login.');
         }
 
-        // Super Admin: User ID 1 and Role ID 1
-        if (
-          Number(user.id) === 1 &&
-          Number(user.role_id) === 1
-        ) {
-          return res.redirect('/super-admin/dashboard');
-        }
-
-        // Other users
-        return res.redirect('/');
+        // Redirect according to user role
+        return redirectByRole(user, res);
       });
     });
 
   } catch (error) {
     console.error('OTP verification error:', error.code || error.message);
+
     return renderError('Unable to verify OTP. Please try again.');
   }
 };
@@ -412,8 +455,9 @@ exports.resendOTP = async (req, res) => {
     }
 
     const [otpRows] = await db.execute(
-      `SELECT id,
-              TIMESTAMPDIFF(SECOND, last_sent_at, NOW()) AS seconds_since_sent
+      `SELECT
+         id,
+         TIMESTAMPDIFF(SECOND, last_sent_at, NOW()) AS seconds_since_sent
        FROM login_otps
        WHERE user_id = ?
        LIMIT 1`,
@@ -470,9 +514,10 @@ exports.logout = (req, res) => {
     return res.redirect('/');
   }
 
-  req.session.destroy(err => {
+  req.session.destroy((err) => {
     if (err) {
       console.error('Logout error:', err.message);
+
       return res.status(500).send(
         'Unable to log out. Please try again.'
       );

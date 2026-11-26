@@ -58,10 +58,11 @@
               class="product-image"
               href="/products/<%= item.product_id %>"
             >
-              <img
-                src="<%= item.image_url || '/images/placeholder.jpg' %>"
-                alt="<%= item.name %>"
-              >
+             <img
+  src="<%= item.image_url || '/images/placeholder.jpg' %>"
+  alt="<%= item.name %>"
+  onerror="this.onerror=null; this.src='/images/placeholder.jpg';"
+>
             </a>
 
             <div class="product-info">

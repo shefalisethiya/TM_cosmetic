@@ -1,17 +1,37 @@
+
 const db = require('../config/db');
 
-// Same field mapping as the products and cart controllers
 const PLACEHOLDER_IMG = '/images/placeholder.jpg';
 
+// ==========================================
+// COMMON PRODUCT FIELD MAPPING
+// ==========================================
 const ITEM_FIELDS = `
   s.id AS product_id,
-  CONCAT_WS(' ', s.product_name, NULLIF(s.brand_name, s.product_name), s.size) AS name,
-  ROUND(s.mrp * (1 - COALESCE(s.discount, 0) / 100), 2) AS price,
-  '${PLACEHOLDER_IMG}' AS image_url,
+
+  CONCAT_WS(
+    ' ',
+    s.product_name,
+    NULLIF(s.brand_name, s.product_name),
+    s.size
+  ) AS name,
+
+  ROUND(
+    s.mrp * (1 - COALESCE(s.discount, 0) / 100),
+    2
+  ) AS price,
+
+  COALESCE(
+    NULLIF(TRIM(s.product_image), ''),
+    '${PLACEHOLDER_IMG}'
+  ) AS image_url,
+
   COALESCE(s.stock, 0) AS stock
 `;
 
-// Error type for problems the customer should see (stock, etc.)
+// ==========================================
+// CUSTOM ORDER ERROR
+// ==========================================
 class OrderError extends Error {}
 
 // ==========================================
@@ -22,42 +42,62 @@ exports.showCheckout = async (req, res) => {
     if (!req.session.user) {
       return res.redirect('/login');
     }
+
     const userId = Number(req.session.user.id);
 
+    // Fetch cart products from inventory table
     const [items] = await db.query(
       `SELECT
          ci.quantity,
          ${ITEM_FIELDS},
-         ROUND(s.mrp * (1 - COALESCE(s.discount, 0) / 100), 2) * ci.quantity AS line_total
+         ROUND(
+           s.mrp * (1 - COALESCE(s.discount, 0) / 100),
+           2
+         ) * ci.quantity AS line_total
+
        FROM cart_items ci
-       INNER JOIN tm_cosmetics_stocks s ON s.id = ci.product_id
-       WHERE ci.user_id = ? AND s.mrp IS NOT NULL`,
+
+       INNER JOIN tm_cosmetics_stocks s
+         ON s.id = ci.product_id
+
+       WHERE ci.user_id = ?
+         AND s.mrp IS NOT NULL`,
       [userId]
     );
 
+    // Empty cart
     if (!items.length) {
       return res.redirect('/cart');
     }
 
-    // If anything in the cart is out of stock or over stock, send the customer back to fix it
+    // Validate stock
     const hasStockProblem = items.some(
-      item => Number(item.stock) < 1 || Number(item.quantity) > Number(item.stock)
+      item =>
+        Number(item.stock) < 1 ||
+        Number(item.quantity) > Number(item.stock)
     );
+
     if (hasStockProblem) {
       return res.redirect('/cart');
     }
 
+    // Calculate subtotal
     const subtotal = items.reduce(
       (sum, item) => sum + Number(item.line_total),
       0
     );
 
+    // Fetch customer information
     const [users] = await db.query(
-      'SELECT name, phone FROM users WHERE id = ?',
+      `SELECT name, phone
+       FROM users
+       WHERE id = ?
+       LIMIT 1`,
       [userId]
     );
 
-    res.render('checkout', {
+    // Render checkout page
+    return res.render('checkout', {
       title: 'Checkout | TM Cosmetic',
       items,
       subtotal,
@@ -66,7 +106,10 @@ exports.showCheckout = async (req, res) => {
 
   } catch (error) {
     console.error('Checkout page error:', error);
-    res.status(500).send('Unable to load checkout page.');
+
+    return res.status(500).send(
+      'Unable to load checkout page.'
+    );
   }
 };
 
@@ -82,6 +125,7 @@ exports.placeOrder = async (req, res) => {
     if (!req.session.user) {
       return res.redirect('/login');
     }
+
     const userId = Number(req.session.user.id);
 
     const {
@@ -93,7 +137,9 @@ exports.placeOrder = async (req, res) => {
       payment_method
     } = req.body;
 
-    // Validate payment method
+    // ======================================
+    // VALIDATE PAYMENT METHOD
+    // ======================================
     const allowedMethods = ['COD', 'CARD', 'UPI'];
 
     if (!allowedMethods.includes(payment_method)) {
@@ -102,7 +148,9 @@ exports.placeOrder = async (req, res) => {
       );
     }
 
-    // Validate delivery information
+    // ======================================
+    // VALIDATE DELIVERY DETAILS
+    // ======================================
     if (
       !customer_name?.trim() ||
       !/^[0-9]{10}$/.test(mobile || '') ||
@@ -115,45 +163,63 @@ exports.placeOrder = async (req, res) => {
       );
     }
 
+    // ======================================
+    // START DATABASE TRANSACTION
+    // ======================================
     connection = await db.getConnection();
 
     await connection.beginTransaction();
     transactionStarted = true;
 
-    // Fetch cart items and lock the stock rows so two orders can't take the same stock
+    // ======================================
+    // FETCH CART ITEMS AND LOCK STOCK ROWS
+    // ======================================
     const [items] = await connection.query(
       `SELECT
          ci.id AS cart_id,
          ci.quantity,
          ${ITEM_FIELDS}
+
        FROM cart_items ci
-       INNER JOIN tm_cosmetics_stocks s ON s.id = ci.product_id
-       WHERE ci.user_id = ? AND s.mrp IS NOT NULL
+
+       INNER JOIN tm_cosmetics_stocks s
+         ON s.id = ci.product_id
+
+       WHERE ci.user_id = ?
+         AND s.mrp IS NOT NULL
+
        FOR UPDATE`,
       [userId]
     );
 
     if (!items.length) {
-      await connection.rollback();
-      transactionStarted = false;
-
-      return res.status(400).send('Your cart is empty.');
+      throw new OrderError('Your cart is empty.');
     }
 
-    // Calculate subtotal and validate stock (stock < 1 = out of stock)
+    // ======================================
+    // VALIDATE STOCK AND CALCULATE SUBTOTAL
+    // ======================================
     let subtotal = 0;
 
     for (const item of items) {
+
       if (Number(item.stock) < 1) {
-        throw new OrderError(`${item.name} is out of stock.`);
+        throw new OrderError(
+          `${item.name} is out of stock.`
+        );
       }
-      if (Number(item.quantity) > Number(item.stock)) {
+
+      if (
+        Number(item.quantity) < 1 ||
+        Number(item.quantity) > Number(item.stock)
+      ) {
         throw new OrderError(
           `Only ${item.stock} left for ${item.name}. Please update your cart.`
         );
       }
 
-      subtotal += Number(item.price) * Number(item.quantity);
+      subtotal +=
+        Number(item.price) * Number(item.quantity);
     }
 
     subtotal = Math.round(subtotal * 100) / 100;
@@ -163,11 +229,14 @@ exports.placeOrder = async (req, res) => {
 
     const paymentStatus = 'Pending';
 
-    const orderStatus = payment_method === 'COD'
-      ? 'Placed'
-      : 'Pending Payment';
+    const orderStatus =
+      payment_method === 'COD'
+        ? 'Placed'
+        : 'Pending Payment';
 
-    // Insert order
+    // ======================================
+    // INSERT MAIN ORDER
+    // ======================================
     const [orderResult] = await connection.query(
       `INSERT INTO orders
        (
@@ -203,11 +272,17 @@ exports.placeOrder = async (req, res) => {
 
     const orderId = orderResult.insertId;
 
-    // Insert order items
+    // ======================================
+    // INSERT ORDER ITEMS
+    // ======================================
     for (const item of items) {
+
       const price = Number(item.price);
       const quantity = Number(item.quantity);
-      const lineTotal = Math.round(price * quantity * 100) / 100;
+
+      const lineTotal = Math.round(
+        price * quantity * 100
+      ) / 100;
 
       await connection.query(
         `INSERT INTO order_items
@@ -233,13 +308,20 @@ exports.placeOrder = async (req, res) => {
       );
     }
 
-    // COD: reduce stock and clear cart
+    // ======================================
+    // COD: REDUCE STOCK
+    // ======================================
     if (payment_method === 'COD') {
+
       for (const item of items) {
+
         const [stockResult] = await connection.query(
           `UPDATE tm_cosmetics_stocks
+
            SET stock = stock - ?
-           WHERE id = ? AND COALESCE(stock, 0) >= ?`,
+
+           WHERE id = ?
+             AND COALESCE(stock, 0) >= ?`,
           [
             item.quantity,
             item.product_id,
@@ -254,25 +336,34 @@ exports.placeOrder = async (req, res) => {
         }
       }
 
+      // Clear customer's cart after successful COD order
       await connection.query(
-        'DELETE FROM cart_items WHERE user_id = ?',
+        `DELETE FROM cart_items
+         WHERE user_id = ?`,
         [userId]
       );
     }
 
+    // ======================================
+    // COMMIT TRANSACTION
+    // ======================================
     await connection.commit();
     transactionStarted = false;
 
-    return res.redirect(`/order-success/${orderId}`);
+    return res.redirect(
+      `/order-success/${orderId}`
+    );
 
   } catch (error) {
+
+    // Rollback if transaction started
     if (connection && transactionStarted) {
       await connection.rollback();
+      transactionStarted = false;
     }
 
     console.error('Place order error:', error);
 
-    // Stock problems: show the real message to the customer
     if (error instanceof OrderError) {
       return res.status(400).send(error.message);
     }
@@ -282,6 +373,7 @@ exports.placeOrder = async (req, res) => {
     );
 
   } finally {
+
     if (connection) {
       connection.release();
     }
@@ -297,21 +389,27 @@ exports.orderSuccess = async (req, res) => {
     if (!req.session.user) {
       return res.redirect('/login');
     }
+
     const userId = Number(req.session.user.id);
     const orderId = Number(req.params.id);
 
+    // Fetch order belonging to logged-in customer
     const [orders] = await db.query(
       `SELECT *
        FROM orders
-       WHERE id = ? AND user_id = ?
+       WHERE id = ?
+         AND user_id = ?
        LIMIT 1`,
       [orderId, userId]
     );
 
     if (!orders.length) {
-      return res.status(404).send('Order not found.');
+      return res.status(404).send(
+        'Order not found.'
+      );
     }
 
+    // Fetch ordered products
     const [items] = await db.query(
       `SELECT *
        FROM order_items
@@ -319,7 +417,7 @@ exports.orderSuccess = async (req, res) => {
       [orderId]
     );
 
-    res.render('order-success', {
+    return res.render('order-success', {
       title: 'Order Confirmed | TM Cosmetic',
       order: orders[0],
       items
@@ -328,7 +426,7 @@ exports.orderSuccess = async (req, res) => {
   } catch (error) {
     console.error('Order confirmation error:', error);
 
-    res.status(500).send(
+    return res.status(500).send(
       'Unable to load order confirmation.'
     );
   }

@@ -1,0 +1,537 @@
+
+<%- include('../partials/header') %>
+
+<style>
+  .orders-page {
+    max-width: 1400px;
+    margin: 30px auto;
+    padding: 0 18px;
+  }
+
+  .orders-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .orders-heading h2 {
+    margin: 0;
+    color: #222;
+  }
+
+  .orders-heading p {
+    color: #777;
+    margin: 6px 0 0;
+  }
+
+  .orders-table-wrapper {
+    overflow-x: auto;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07);
+  }
+
+  .orders-table {
+    width: 100%;
+    min-width: 1100px;
+    border-collapse: collapse;
+  }
+
+  .orders-table th,
+  .orders-table td {
+    padding: 14px;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+    vertical-align: top;
+    font-size: 14px;
+  }
+
+  .orders-table th {
+    background: #f7f7f7;
+    color: #444;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .order-number {
+    font-weight: 700;
+    color: #222;
+  }
+
+  .customer-name {
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+
+  .muted {
+    color: #777;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .product-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    min-width: 180px;
+  }
+
+  .product-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .product-item img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    background: #fff;
+  }
+
+  .product-name {
+    font-weight: 600;
+    color: #333;
+  }
+
+  .product-details {
+    font-size: 12px;
+    color: #777;
+    margin-top: 3px;
+  }
+
+  .amount {
+    font-weight: 700;
+    color: #222;
+    white-space: nowrap;
+  }
+
+  .status {
+    display: inline-block;
+    padding: 5px 9px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .status-placed {
+    background: #e3f2fd;
+    color: #1565c0;
+  }
+
+  .status-assigned {
+    background: #fff3e0;
+    color: #e65100;
+  }
+
+  .status-delivered {
+    background: #e8f5e9;
+    color: #2e7d32;
+  }
+
+  .status-pending {
+    background: #ffebee;
+    color: #c62828;
+  }
+
+  .status-other {
+    background: #eee;
+    color: #555;
+  }
+
+  .payment-method {
+    font-weight: 600;
+  }
+
+  .payment-status {
+    font-size: 12px;
+    margin-top: 5px;
+    color: #777;
+  }
+
+  .assignment-form {
+    min-width: 190px;
+  }
+
+  .assignment-form select {
+    width: 100%;
+    padding: 9px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    background: #fff;
+  }
+
+  .assign-button {
+    width: 100%;
+    padding: 9px 12px;
+    background: #6c3bd1;
+    border: none;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .assign-button:hover {
+    background: #5429ad;
+  }
+
+  .assign-button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+  }
+
+  .assigned-person {
+    font-weight: 600;
+    color: #333;
+  }
+
+  .success-message {
+    background: #e8f5e9;
+    color: #2e7d32;
+    padding: 12px 16px;
+    border-radius: 7px;
+    margin-bottom: 18px;
+  }
+
+  .error-message {
+    background: #ffebee;
+    color: #c62828;
+    padding: 12px 16px;
+    border-radius: 7px;
+    margin-bottom: 18px;
+  }
+
+  .empty-orders {
+    padding: 45px 20px;
+    text-align: center;
+    color: #777;
+  }
+
+  .back-link {
+    color: #6c3bd1;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  @media(max-width: 600px) {
+    .orders-page {
+      padding: 0 10px;
+    }
+
+    .orders-heading h2 {
+      font-size: 21px;
+    }
+  }
+</style>
+
+<div class="orders-page">
+
+  <!-- PAGE HEADING -->
+  <div class="orders-heading">
+    <div>
+      <h2>Order Management</h2>
+      <p>View customer orders and assign delivery personnel.</p>
+    </div>
+
+    <a href="/admin/dashboard" class="back-link">
+      ← Back to Dashboard
+    </a>
+  </div>
+
+  <!-- SUCCESS MESSAGE -->
+  <% if (assigned) { %>
+    <div class="success-message">
+      Delivery Person assigned successfully.
+    </div>
+  <% } %>
+
+  <!-- ERROR MESSAGE -->
+  <% if (error) { %>
+    <div class="error-message">
+      <%= error %>
+    </div>
+  <% } %>
+
+  <!-- ORDERS TABLE -->
+  <div class="orders-table-wrapper">
+
+    <% if (!orders || orders.length === 0) { %>
+
+      <div class="empty-orders">
+        <h3>No Orders Found</h3>
+        <p>Customer orders will appear here.</p>
+      </div>
+
+    <% } else { %>
+
+      <table class="orders-table">
+
+        <thead>
+          <tr>
+            <th>Order</th>
+            <th>Customer Details</th>
+            <th>Products</th>
+            <th>Order Amount</th>
+            <th>Payment</th>
+            <th>Order Status</th>
+            <th>Delivery Person</th>
+            <th>Assign Delivery</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          <% orders.forEach(order => { %>
+
+            <%
+              const status = String(order.order_status || '');
+              let statusClass = 'status-other';
+
+              if (status === 'Placed') {
+                statusClass = 'status-placed';
+              } else if (status === 'Assigned' ||
+                         status === 'Accepted' ||
+                         status === 'Out for Delivery') {
+                statusClass = 'status-assigned';
+              } else if (status === 'Delivered') {
+                statusClass = 'status-delivered';
+              } else if (status === 'Pending Payment') {
+                statusClass = 'status-pending';
+              }
+            %>
+
+            <tr>
+
+              <!-- ORDER DETAILS -->
+              <td>
+                <div class="order-number">
+                  #<%= order.order_id %>
+                </div>
+
+                <div class="muted">
+                  <%= order.created_at
+                    ? new Date(order.created_at).toLocaleString('en-IN')
+                    : 'N/A' %>
+                </div>
+              </td>
+
+              <!-- CUSTOMER DETAILS -->
+              <td>
+                <div class="customer-name">
+                  <%= order.customer_name || 'N/A' %>
+                </div>
+
+                <div class="muted">
+                  <%= order.mobile || 'N/A' %><br>
+
+                  <%= order.address || '' %><br>
+
+                  <%= order.city || '' %>
+                  <%= order.pincode || '' %>
+                </div>
+              </td>
+
+              <!-- ORDERED PRODUCTS -->
+              <td>
+
+                <% if (order.items && order.items.length > 0) { %>
+
+                  <% order.items.forEach(item => { %>
+
+                    <div class="product-item">
+
+                      <% if (item.product_image) { %>
+                        <img
+                          src="<%= item.product_image %>"
+                          alt="<%= item.product_name %>"
+                          onerror="this.style.display='none'"
+                        >
+                      <% } %>
+
+                      <div>
+                        <div class="product-name">
+                          <%= item.product_name %>
+                        </div>
+
+                        <div class="product-details">
+                          ₹<%= Number(item.price || 0).toFixed(2) %>
+                          × <%= item.quantity %>
+                        </div>
+
+                        <div class="product-details">
+                          Total: ₹<%= Number(item.line_total || 0).toFixed(2) %>
+                        </div>
+                      </div>
+
+                    </div>
+
+                  <% }) %>
+
+                <% } else { %>
+
+                  <span class="muted">No product details</span>
+
+                <% } %>
+
+              </td>
+
+              <!-- ORDER AMOUNT -->
+              <td>
+                <div class="amount">
+                  ₹<%= Number(order.total_amount || 0).toFixed(2) %>
+                </div>
+
+                <div class="muted">
+                  Subtotal: ₹<%= Number(order.subtotal || 0).toFixed(2) %>
+                </div>
+
+                <div class="muted">
+                  Delivery: ₹<%= Number(order.delivery_charge || 0).toFixed(2) %>
+                </div>
+              </td>
+
+              <!-- PAYMENT -->
+              <td>
+                <div class="payment-method">
+                  <%= order.payment_method || 'N/A' %>
+                </div>
+
+                <div class="payment-status">
+                  <%= order.payment_status || 'Pending' %>
+                </div>
+              </td>
+
+              <!-- ORDER STATUS -->
+              <td>
+                <span class="status <%= statusClass %>">
+                  <%= status || 'N/A' %>
+                </span>
+              </td>
+
+              <!-- CURRENT DELIVERY PERSON -->
+              <td>
+                <% if (order.delivery_person_id) { %>
+
+                  <div class="assigned-person">
+                    <%= order.delivery_person_name || 'Delivery Person' %>
+                  </div>
+
+                  <div class="muted">
+                    <%= order.delivery_person_phone || '' %>
+                  </div>
+
+                  <div class="muted">
+                    Assigned:
+                    <%= order.assigned_at
+                      ? new Date(order.assigned_at).toLocaleString('en-IN')
+                      : 'N/A' %>
+                  </div>
+
+                <% } else { %>
+
+                  <span class="muted">Not assigned</span>
+
+                <% } %>
+              </td>
+
+              <!-- ASSIGN DELIVERY FORM -->
+              <td>
+
+                <% if (
+                  ['Placed', 'Assigned'].includes(status) &&
+                  status !== 'Pending Payment'
+                ) { %>
+
+                  <% if (deliveryPersons && deliveryPersons.length > 0) { %>
+
+                    <form
+                      class="assignment-form"
+                      method="POST"
+                      action="/admin/orders/<%= order.order_id %>/assign"
+                      onsubmit="return confirm('Are you sure you want to assign this order?');"
+                    >
+
+                      <select
+                        name="delivery_person_id"
+                        required
+                      >
+
+                        <option value="">
+                          Select Delivery Person
+                        </option>
+
+                        <% deliveryPersons.forEach(person => { %>
+
+                          <option
+                            value="<%= person.id %>"
+                            <%= Number(order.delivery_person_id) === Number(person.id)
+                              ? 'selected'
+                              : '' %>
+                          >
+                            <%= person.name %>
+                            <% if (person.phone) { %>
+                              - <%= person.phone %>
+                            <% } %>
+                          </option>
+
+                        <% }) %>
+
+                      </select>
+
+                      <button
+                        type="submit"
+                        class="assign-button"
+                      >
+                        <%= order.delivery_person_id
+                          ? 'Reassign Order'
+                          : 'Assign Order' %>
+                      </button>
+
+                    </form>
+
+                  <% } else { %>
+
+                    <span class="muted">
+                      No Delivery Person available.
+                    </span>
+
+                  <% } %>
+
+                <% } else if (status === 'Pending Payment') { %>
+
+                  <span class="muted">
+                    Awaiting payment.
+                  </span>
+
+                <% } else { %>
+
+                  <span class="muted">
+                    Assignment unavailable.
+                  </span>
+
+                <% } %>
+
+              </td>
+
+            </tr>
+
+          <% }) %>
+
+        </tbody>
+
+      </table>
+
+    <% } %>
+
+  </div>
+
+</div>
+
+<%- include('../partials/footer') %>

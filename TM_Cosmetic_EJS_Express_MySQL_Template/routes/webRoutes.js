@@ -11,30 +11,29 @@ const cart = require('../controllers/cartController');
 const checkout = require('../controllers/checkoutController');
 const superAdmin = require('../controllers/superAdminController');
 const product = require('../controllers/productController');
+const admin = require('../controllers/adminController');
+const delivery = require('../controllers/deliveryController');
+const b2c = require('../controllers/b2cController');
+const b2b = require('../controllers/b2bController');
 
 // ==========================================
 // IMPORT MIDDLEWARE
 // ==========================================
 const {
+  requireLogin,
   requireSuperAdmin,
-  requireProductManagement
+  requireAdmin,
+  requireDelivery,
+  requireProductManagement,
+  requireB2C,
+  requireB2B
 } = require('../middleware/roleMiddleware');
-
-// ==========================================
-// LOGIN MIDDLEWARE
-// ==========================================
-function requireLogin(req, res, next) {
-  if (!req.session || !req.session.user) {
-    return res.redirect('/login');
-  }
-
-  next();
-}
 
 // ==========================================
 // CHECK CONTROLLER FUNCTIONS
 // ==========================================
 const controllerFunctions = {
+
   // Store
   'store.home': store.home,
   'store.products': store.products,
@@ -45,9 +44,9 @@ const controllerFunctions = {
   'auth.loginWithOTP': auth.loginWithOTP,
   'auth.showVerifyOTP': auth.showVerifyOTP,
   'auth.verifyOTP': auth.verifyOTP,
+  'auth.resendOTP': auth.resendOTP,
   'auth.showSignup': auth.showSignup,
   'auth.signup': auth.signup,
-  'auth.resendOTP': auth.resendOTP,
   'auth.logout': auth.logout,
 
   // Cart
@@ -80,11 +79,27 @@ const controllerFunctions = {
   'product.updateProduct': product.updateProduct,
   'product.deleteProduct': product.deleteProduct,
   'product.updateStock': product.updateStock,
-  'product.uploadProductImage': product.uploadProductImage
+  'product.uploadProductImage': product.uploadProductImage,
+
+  // Admin
+  'admin.dashboard': admin.dashboard,
+  'admin.orderList': admin.orderList,
+  'admin.assignDelivery': admin.assignDelivery,
+
+  // Delivery Person
+  'delivery.dashboard': delivery.dashboard,
+  'delivery.updateStatus': delivery.updateStatus,
+
+  // B2C Customer
+  'b2c.dashboard': b2c.dashboard,
+
+  // B2B Customer
+  'b2b.dashboard': b2b.dashboard,
+  'b2b.orders': b2b.orders
 };
 
 // ==========================================
-// CHECK MISSING FUNCTIONS
+// CHECK MISSING CONTROLLER FUNCTIONS
 // ==========================================
 const missingFunctions = Object.entries(controllerFunctions)
   .filter(([name, fn]) => typeof fn !== 'function')
@@ -148,29 +163,28 @@ router.post('/checkout', requireLogin, checkout.placeOrder);
 // ==========================================
 // ORDER SUCCESS
 // ==========================================
-router.get('/order-success/:id', requireLogin, checkout.orderSuccess);
+router.get(
+  '/order-success/:id',
+  requireLogin,
+  checkout.orderSuccess
+);
 
 // ==========================================
 // PRODUCT MANAGEMENT
 // Super Admin, Admin and Delivery Person
 // ==========================================
-
-// View all products
 router.get(
   '/manage-products',
   requireProductManagement,
   product.productList
 );
 
-// Show Add Product page
 router.get(
   '/manage-products/add',
   requireProductManagement,
   product.showAddProduct
 );
 
-// Add Product
-// IMPORTANT: Multer must run before addProduct
 router.post(
   '/manage-products/add',
   requireProductManagement,
@@ -178,15 +192,12 @@ router.post(
   product.addProduct
 );
 
-// Show Edit Product page
 router.get(
   '/manage-products/:id/edit',
   requireProductManagement,
   product.showEditProduct
 );
 
-// Update Product
-// IMPORTANT: Multer must run before updateProduct
 router.post(
   '/manage-products/:id/update',
   requireProductManagement,
@@ -194,14 +205,12 @@ router.post(
   product.updateProduct
 );
 
-// Delete Product
 router.post(
   '/manage-products/:id/delete',
   requireProductManagement,
   product.deleteProduct
 );
 
-// Update Product Stock
 router.post(
   '/manage-products/:id/stock',
   requireProductManagement,
@@ -210,6 +219,7 @@ router.post(
 
 // ==========================================
 // SUPER ADMIN DASHBOARD
+// Role ID 1, User ID 1 only
 // ==========================================
 router.get(
   '/super-admin/dashboard',
@@ -220,22 +230,18 @@ router.get(
 // ==========================================
 // SUPER ADMIN STAFF MANAGEMENT
 // ==========================================
-
-// Staff List
 router.get(
   '/super-admin/staff',
   requireSuperAdmin,
   superAdmin.staffList
 );
 
-// Show Create Staff Page
 router.get(
   '/super-admin/staff/create',
   requireSuperAdmin,
   superAdmin.showCreateStaff
 );
 
-// Create Staff
 router.post(
   '/super-admin/staff/create',
   requireSuperAdmin,
@@ -245,40 +251,110 @@ router.post(
 // ==========================================
 // SUPER ADMIN USER MANAGEMENT
 // ==========================================
-
-// View Users by Category
 router.get(
   '/super-admin/users/:type',
   requireSuperAdmin,
   superAdmin.usersList
 );
 
-// Edit User Page
 router.get(
   '/super-admin/users/:id/edit',
   requireSuperAdmin,
   superAdmin.showEditUser
 );
 
-// Update User
 router.post(
   '/super-admin/users/:id/update',
   requireSuperAdmin,
   superAdmin.updateUser
 );
 
-// Update Individual User Permissions
 router.post(
   '/super-admin/users/:id/permissions',
   requireSuperAdmin,
   superAdmin.updateUserPermissions
 );
 
-// Delete User
 router.post(
   '/super-admin/users/:id/delete',
   requireSuperAdmin,
   superAdmin.deleteUser
+);
+
+// ==========================================
+// ADMIN DASHBOARD
+// Role ID 1 and 5
+// ==========================================
+router.get(
+  '/admin/dashboard',
+  requireAdmin,
+  admin.dashboard
+);
+
+// ==========================================
+// ADMIN ORDER MANAGEMENT
+// Role ID 1 and 5
+// ==========================================
+router.get(
+  '/admin/orders',
+  requireAdmin,
+  admin.orderList
+);
+
+router.post(
+  '/admin/orders/:id/assign',
+  requireAdmin,
+  admin.assignDelivery
+);
+
+// ==========================================
+// DELIVERY PERSON DASHBOARD
+// Role ID 4 only
+// ==========================================
+router.get(
+  '/delivery/dashboard',
+  requireDelivery,
+  delivery.dashboard
+);
+
+// ==========================================
+// DELIVERY PERSON ORDER STATUS UPDATE
+// Role ID 4 only
+// ==========================================
+router.post(
+  '/delivery/orders/:id/status',
+  requireDelivery,
+  delivery.updateStatus
+);
+
+// ==========================================
+// B2B CUSTOMER DASHBOARD
+// Role ID 2 only
+// ==========================================
+router.get(
+  '/b2b/dashboard',
+  requireB2B,
+  b2b.dashboard
+);
+
+// ==========================================
+// B2B CUSTOMER ORDERS
+// Role ID 2 only
+// ==========================================
+router.get(
+  '/b2b/orders',
+  requireB2B,
+  b2b.orders
+);
+
+// ==========================================
+// B2C CUSTOMER DASHBOARD
+// Role ID 3 only
+// ==========================================
+router.get(
+  '/b2c/dashboard',
+  requireB2C,
+  b2c.dashboard
 );
 
 // ==========================================

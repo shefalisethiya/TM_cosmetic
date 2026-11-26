@@ -194,10 +194,15 @@
           <div class="checkout-product">
 
             <div class="checkout-product-image">
-              <img
-                src="<%= item.image_url %>"
-                alt="<%= item.name %>"
-              >
+             
+<div class="checkout-product-image">
+  <img
+    src="<%= item.image_url %>"
+    alt="<%= item.name %>"
+    onerror="this.onerror=null; this.src='/images/placeholder.jpg';"
+  >
+</div>
+
             </div>
 
             <div class="checkout-product-info">

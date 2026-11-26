@@ -6,18 +6,26 @@ const PLACEHOLDER_IMG = '/images/placeholder.jpg';
 // Fields used to display cart products
 const ITEM_FIELDS = `
   ci.product_id AS product_id,
+
   CONCAT_WS(
     ' ',
     s.product_name,
     NULLIF(s.brand_name, s.product_name),
     s.size
   ) AS name,
+
   COALESCE(
     ROUND(s.mrp * (1 - COALESCE(s.discount, 0) / 100), 2),
     0
   ) AS price,
+
   s.mrp,
-  '${PLACEHOLDER_IMG}' AS image_url,
+
+  COALESCE(
+    NULLIF(TRIM(s.product_image), ''),
+    '${PLACEHOLDER_IMG}'
+  ) AS image_url,
+
   COALESCE(s.stock, 0) AS stock
 `;
 
